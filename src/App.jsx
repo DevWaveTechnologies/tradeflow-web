@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CreateJobForm from './components/CreateJobForm'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -27,6 +28,9 @@ function App() {
       <h1 className="text-3xl font-bold">
         TradeFlow
       </h1>
+
+      <CreateJobForm onCreated={fetchJobs} />
+
       {errorMessage ? (
         <p className="mt-4 text-red-600">{errorMessage}</p>
       ) : (
