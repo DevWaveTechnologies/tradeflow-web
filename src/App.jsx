@@ -1,66 +1,86 @@
-import { useEffect, useState } from 'react'
-import CreateJobForm from './components/CreateJobForm'
-import JobCard from './components/JobCard'
-import { supabase } from './lib/supabase'
+import Login from './components/Login'
+import AppHeader from './components/AppHeader'
+import LogoutButton from './components/LogoutButton'
+import AdminDashboard from './components/AdminDashboard'
+import WorkerDashboard from './components/WorkerDashboard'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 
-function App() {
-  const [jobs, setJobs] = useState([])
-  const [errorMessage, setErrorMessage] = useState('')
+function AppContent() {
+  const { session, profile, profileError, loading } = useAuth()
 
-  useEffect(() => {
-    fetchJobs()
-  }, [])
-
-  async function fetchJobs() {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*, companies(name), users(name)')
-
-    if (error) {
-      setErrorMessage(error.message)
-      return
-    }
-
-    setJobs(data ?? [])
-    setErrorMessage('')
+  if (loading) {
+    return (
+      <div className="p-10">
+        <p>Loading…</p>
+      </div>
+    )
   }
 
-  async function updateJobStatus(jobId, status) {
-    setErrorMessage('')
+  if (!session) {
+    return <Login />
+  }
 
-    const { error } = await supabase
-      .from('jobs')
-      .update({ status })
-      .eq('id', jobId)
+  if (!profile) {
+    const authUserId = session.user.id
+    const isRlsBlock = profileError.toLowerCase().includes('row-level security')
 
-    if (error) {
-      setErrorMessage(error.message)
-      return
-    }
+    return (
+      <div className="p-10 text-left">
+        <div className="mb-4 flex justify-end">
+          <LogoutButton />
+        </div>
+        <h1 className="text-2xl font-bold">TradeFlow</h1>
+        {isRlsBlock || profileError.toLowerCase().includes('infinite recursion') ? (
+          <p className="mt-4 text-red-600">
+            RLS policy error. Run <code>supabase/fix-users-profile-rls.sql</code> in the SQL
+            Editor, add your user row below, then refresh.
+          </p>
+        ) : (
+          <p className="mt-4 text-red-600">
+            Signed in, but no matching row in <code>public.users</code>. Add a row with
+            this id and role <code>admin</code> or <code>worker</code>:
+          </p>
+        )}
+        <p className="mt-2 font-mono text-sm">{authUserId}</p>
+        {profileError ? (
+          <p className="mt-2 text-sm text-gray-600">{profileError}</p>
+        ) : null}
+      </div>
+    )
+  }
 
-    setJobs((current) =>
-      current.map((job) => (job.id === jobId ? { ...job, status } : job)),
+  if (profile.role !== 'admin' && profile.role !== 'worker') {
+    return (
+      <div className="p-10 text-left">
+        <div className="mb-4 flex justify-end">
+          <LogoutButton />
+        </div>
+        <h1 className="text-2xl font-bold">TradeFlow</h1>
+        <p className="mt-4 text-red-600">
+          Unknown role &quot;{profile.role}&quot;. Use <code>admin</code> or{' '}
+          <code>worker</code> in the users table.
+        </p>
+      </div>
     )
   }
 
   return (
     <div className="p-10">
-      <h1 className="text-3xl font-bold">
-        TradeFlow
-      </h1>
-
-      <CreateJobForm onCreated={fetchJobs} />
-
-      {errorMessage ? (
-        <p className="mt-4 text-red-600">{errorMessage}</p>
-      ) : null}
-
-      <ul className="mt-6 space-y-4">
-        {jobs.map((job) => (
-          <JobCard key={job.id} job={job} onStatusChange={updateJobStatus} />
-        ))}
-      </ul>
+      <AppHeader />
+      {profile.role === 'admin' ? (
+        <AdminDashboard />
+      ) : (
+        <WorkerDashboard profile={profile} />
+      )}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
