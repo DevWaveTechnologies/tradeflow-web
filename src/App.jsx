@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import CreateJobForm from './components/CreateJobForm'
+import JobCard from './components/JobCard'
 import { supabase } from './lib/supabase'
 
 function App() {
@@ -13,7 +14,7 @@ function App() {
   async function fetchJobs() {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*')
+      .select('*, companies(name), users(name)')
 
     if (error) {
       setErrorMessage(error.message)
@@ -21,6 +22,25 @@ function App() {
     }
 
     setJobs(data ?? [])
+    setErrorMessage('')
+  }
+
+  async function updateJobStatus(jobId, status) {
+    setErrorMessage('')
+
+    const { error } = await supabase
+      .from('jobs')
+      .update({ status })
+      .eq('id', jobId)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setJobs((current) =>
+      current.map((job) => (job.id === jobId ? { ...job, status } : job)),
+    )
   }
 
   return (
@@ -33,17 +53,13 @@ function App() {
 
       {errorMessage ? (
         <p className="mt-4 text-red-600">{errorMessage}</p>
-      ) : (
-        <ul className="mt-6 space-y-3">
-          {jobs.map((job) => (
-            <li key={job.id} className="rounded border p-4">
-              <p className="font-semibold">{job.title}</p>
-              {job.address ? <p className="text-sm text-gray-600">{job.address}</p> : null}
-              {job.notes ? <p className="mt-1 text-sm">{job.notes}</p> : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      ) : null}
+
+      <ul className="mt-6 space-y-4">
+        {jobs.map((job) => (
+          <JobCard key={job.id} job={job} onStatusChange={updateJobStatus} />
+        ))}
+      </ul>
     </div>
   )
 }
