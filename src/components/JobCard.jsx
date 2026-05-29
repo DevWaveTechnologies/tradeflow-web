@@ -3,9 +3,19 @@ function formatStatus(status) {
   return status.replace(/_/g, ' ')
 }
 
-export default function JobCard({ job, onStatusChange }) {
+export default function JobCard({
+  job,
+  onStatusChange,
+  showAssign = false,
+  workers = [],
+  onAssignWorker,
+  assigning = false,
+}) {
   const customer = job.companies?.name ?? 'Unassigned'
-  const worker = job.users?.name ?? 'Unassigned'
+  const worker =
+    workers.find((w) => w.id === job.assigned_to)?.name ??
+    job.users?.name ??
+    (job.assigned_to ? 'Unknown worker' : 'Unassigned')
 
   return (
     <li className="rounded border p-4 text-left">
@@ -25,6 +35,30 @@ export default function JobCard({ job, onStatusChange }) {
           <dd className="text-gray-900">{worker}</dd>
         </div>
       </dl>
+
+      {showAssign ? (
+        <div className="mt-3 border-t pt-3">
+          <label htmlFor={`assign-${job.id}`} className="mb-1 block text-sm font-medium">
+            Assign to worker
+          </label>
+          <select
+            id={`assign-${job.id}`}
+            value={job.assigned_to ?? ''}
+            onChange={(event) =>
+              onAssignWorker(job.id, event.target.value || null)
+            }
+            disabled={assigning}
+            className="w-full rounded border px-3 py-2 text-sm disabled:opacity-50 sm:max-w-xs"
+          >
+            <option value="">Unassigned</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       {job.address || job.notes ? (
         <div className="mt-3 border-t pt-3 text-sm text-gray-600">

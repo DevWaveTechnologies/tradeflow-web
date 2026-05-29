@@ -5,16 +5,20 @@ import { supabase } from '../lib/supabase'
 
 export default function AdminDashboard() {
   const [jobs, setJobs] = useState([])
+  const [workers, setWorkers] = useState([])
   const [errorMessage, setErrorMessage] = useState('')
+  const [assigningJobId, setAssigningJobId] = useState(null)
 
   useEffect(() => {
+    fetchWorkers()
     fetchJobs()
   }, [])
 
   async function fetchJobs() {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, companies(name), users(name)')
+      .select('*')
+      .order('created_at', { ascending: false })
 
     if (error) {
       setErrorMessage(error.message)
@@ -23,6 +27,21 @@ export default function AdminDashboard() {
 
     setJobs(data ?? [])
     setErrorMessage('')
+  }
+
+  async function fetchWorkers() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, role')
+      .eq('role', 'worker')
+      .order('name')
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setWorkers(data ?? [])
   }
 
   async function updateJobStatus(jobId, status) {
@@ -43,6 +62,31 @@ export default function AdminDashboard() {
     )
   }
 
+  async function assignWorker(jobId, workerId) {
+    setErrorMessage('')
+    setAssigningJobId(jobId)
+
+    const previousJobs = jobs
+    setJobs((current) =>
+      current.map((job) =>
+        job.id === jobId ? { ...job, assigned_to: workerId } : job,
+      ),
+    )
+
+    const { error } = await supabase
+      .from('jobs')
+      .update({ assigned_to: workerId })
+      .eq('id', jobId)
+
+    setAssigningJobId(null)
+
+    if (error) {
+      setJobs(previousJobs)
+      setErrorMessage(error.message)
+      return
+    }
+  }
+
   return (
     <>
       <CreateJobForm onCreated={fetchJobs} />
@@ -53,7 +97,15 @@ export default function AdminDashboard() {
 
       <ul className="mt-6 space-y-4">
         {jobs.map((job) => (
-          <JobCard key={job.id} job={job} onStatusChange={updateJobStatus} />
+          <JobCard
+            key={job.id}
+            job={job}
+            workers={workers}
+            onStatusChange={updateJobStatus}
+            showAssign
+            onAssignWorker={assignWorker}
+            assigning={assigningJobId === job.id}
+          />
         ))}
       </ul>
     </>

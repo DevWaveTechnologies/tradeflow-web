@@ -51,12 +51,35 @@ USING (assigned_to = auth.uid())
 WITH CHECK (assigned_to = auth.uid());
 
 DROP POLICY IF EXISTS "Admins full access jobs" ON public.jobs;
-CREATE POLICY "Admins full access jobs"
+DROP POLICY IF EXISTS "Admins read all jobs" ON public.jobs;
+DROP POLICY IF EXISTS "Admins insert jobs" ON public.jobs;
+DROP POLICY IF EXISTS "Admins update jobs" ON public.jobs;
+DROP POLICY IF EXISTS "Admins delete jobs" ON public.jobs;
+
+CREATE POLICY "Admins read all jobs"
 ON public.jobs
-FOR ALL
+FOR SELECT
+TO authenticated
+USING (public.is_admin());
+
+CREATE POLICY "Admins insert jobs"
+ON public.jobs
+FOR INSERT
+TO authenticated
+WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins update jobs"
+ON public.jobs
+FOR UPDATE
 TO authenticated
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
+
+CREATE POLICY "Admins delete jobs"
+ON public.jobs
+FOR DELETE
+TO authenticated
+USING (public.is_admin());
 
 DROP POLICY IF EXISTS "Authenticated read companies" ON public.companies;
 CREATE POLICY "Authenticated read companies"
