@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
     setProfileError('')
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id, name, role')
       .eq('id', userId)
       .maybeSingle()
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
 
     if (!data) {
       setProfile(null)
-      setProfileError('No profile row found in public.users.')
+      setProfileError('No profile row found in public.profiles.')
       return
     }
 

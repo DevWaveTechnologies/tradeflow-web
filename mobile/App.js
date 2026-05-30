@@ -28,7 +28,7 @@ function AppContent() {
         <View style={styles.centeredContent}>
           <Text style={styles.errorTitle}>Account not linked</Text>
           <Text style={styles.errorText}>
-            Add a row in public.users with your auth user id and role admin or worker.
+            Add a row in public.profiles with your auth user id and role admin or worker.
           </Text>
           {session.user?.id ? (
             <Text style={styles.userId}>{session.user.id}</Text>

@@ -28,7 +28,7 @@ export default function JobsScreen() {
     if (!isAdmin) return
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('id, name')
       .eq('role', 'worker')
       .order('name')
