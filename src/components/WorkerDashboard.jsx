@@ -57,7 +57,12 @@ export default function WorkerDashboard({ profile }) {
       ) : (
         <ul className="mt-6 space-y-4">
           {jobs.map((job) => (
-            <JobCard key={job.id} job={job} onStatusChange={updateJobStatus} />
+            <JobCard
+              key={job.id}
+              job={job}
+              onStatusChange={updateJobStatus}
+              showAssignedWorker={false}
+            />
           ))}
         </ul>
       )}

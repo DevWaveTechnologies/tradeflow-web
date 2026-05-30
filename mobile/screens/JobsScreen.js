@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
 import JobCard from '../components/JobCard'
+import { useJobsRealtime } from '../hooks/useJobsRealtime'
 
 export default function JobsScreen() {
   const { profile } = useAuth()
@@ -65,6 +66,12 @@ export default function JobsScreen() {
     setLoading(true)
     loadAll().finally(() => setLoading(false))
   }, [profile.id, profile.role])
+
+  const refreshJobs = useCallback(() => {
+    fetchJobs()
+  }, [profile.id, profile.role, isAdmin])
+
+  useJobsRealtime(refreshJobs, isAdmin)
 
   async function handleRefresh() {
     setRefreshing(true)

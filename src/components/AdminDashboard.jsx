@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import CreateJobForm from './CreateJobForm'
 import JobCard from './JobCard'
+import { useJobsRealtime } from '../hooks/useJobsRealtime'
 import { supabase } from '../lib/supabase'
 
 export default function AdminDashboard() {
@@ -13,6 +14,12 @@ export default function AdminDashboard() {
     fetchWorkers()
     fetchJobs()
   }, [])
+
+  const refreshJobs = useCallback(() => {
+    fetchJobs()
+  }, [])
+
+  useJobsRealtime(refreshJobs)
 
   async function fetchJobs() {
     const { data, error } = await supabase

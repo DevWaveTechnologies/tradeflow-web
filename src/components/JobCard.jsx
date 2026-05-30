@@ -7,6 +7,7 @@ export default function JobCard({
   job,
   onStatusChange,
   showAssign = false,
+  showAssignedWorker = true,
   workers = [],
   onAssignWorker,
   assigning = false,
@@ -30,10 +31,12 @@ export default function JobCard({
           <dt className="font-medium text-gray-500">Status</dt>
           <dd className="capitalize text-gray-900">{formatStatus(job.status)}</dd>
         </div>
-        <div className="sm:col-span-2">
-          <dt className="font-medium text-gray-500">Assigned worker</dt>
-          <dd className="text-gray-900">{worker}</dd>
-        </div>
+        {showAssignedWorker ? (
+          <div className="sm:col-span-2">
+            <dt className="font-medium text-gray-500">Assigned worker</dt>
+            <dd className="text-gray-900">{worker}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {showAssign ? (
