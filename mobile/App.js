@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import AppHeader from './components/AppHeader'
 import LoginScreen from './screens/LoginScreen'
 import JobsScreen from './screens/JobsScreen'
+import AdminShellScreen from './screens/AdminShellScreen'
 
 function AppContent() {
   const { session, profile, profileError, loading } = useAuth()
@@ -50,6 +51,10 @@ function AppContent() {
         </View>
       </View>
     )
+  }
+
+  if (profile.role === 'admin') {
+    return <AdminShellScreen />
   }
 
   return <JobsScreen />

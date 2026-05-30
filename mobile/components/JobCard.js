@@ -19,6 +19,9 @@ export default function JobCard({
   return (
     <View style={styles.jobCard}>
       <Text style={styles.jobTitle}>{job.title}</Text>
+      {job.companies?.name ? (
+        <Text style={styles.jobMeta}>Customer: {job.companies.name}</Text>
+      ) : null}
       <Text style={styles.jobMeta}>Status: {formatStatus(job.status)}</Text>
       {workerName ? <Text style={styles.jobMeta}>Worker: {workerName}</Text> : null}
       {job.address ? <Text style={styles.jobDetail}>{job.address}</Text> : null}

@@ -13,7 +13,7 @@ import AppHeader from '../components/AppHeader'
 import JobCard from '../components/JobCard'
 import { useJobsRealtime } from '../hooks/useJobsRealtime'
 
-export default function JobsScreen() {
+export default function JobsScreen({ embedded = false, refreshKey = 0 }) {
   const { profile } = useAuth()
   const isAdmin = profile.role === 'admin'
   const [jobs, setJobs] = useState([])
@@ -41,7 +41,10 @@ export default function JobsScreen() {
   async function fetchJobs() {
     setErrorMessage('')
 
-    let query = supabase.from('jobs').select('*').order('created_at', { ascending: false })
+    let query = supabase
+      .from('jobs')
+      .select('*, companies(name)')
+      .order('created_at', { ascending: false })
 
     if (!isAdmin) {
       query = query.eq('assigned_to', profile.id)
@@ -65,7 +68,7 @@ export default function JobsScreen() {
   useEffect(() => {
     setLoading(true)
     loadAll().finally(() => setLoading(false))
-  }, [profile.id, profile.role])
+  }, [profile.id, profile.role, refreshKey])
 
   const refreshJobs = useCallback(() => {
     fetchJobs()
@@ -134,11 +137,13 @@ export default function JobsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <AppHeader
-        title={isAdmin ? 'All Jobs' : 'My Jobs'}
-        subtitle={isAdmin ? 'Admin view' : 'Assigned to you'}
-      />
+    <View style={[styles.container, embedded && styles.embedded]}>
+      {!embedded ? (
+        <AppHeader
+          title={isAdmin ? 'All Jobs' : 'My Jobs'}
+          subtitle={isAdmin ? 'Admin view' : 'Assigned to you'}
+        />
+      ) : null}
 
       {loading ? (
         <ActivityIndicator style={styles.loader} size="large" color="#111827" />
@@ -166,7 +171,7 @@ export default function JobsScreen() {
           ListEmptyComponent={
             <Text style={styles.empty}>
               {isAdmin
-                ? 'No jobs yet. Create jobs from the web admin.'
+                ? 'No jobs yet. Open the Create job tab to add one.'
                 : 'No jobs assigned to you yet. Ask admin to assign a job.'}
             </Text>
           }
@@ -183,6 +188,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f3f4f6',
+  },
+  embedded: {
+    flex: 1,
   },
   loader: {
     marginTop: 40,
