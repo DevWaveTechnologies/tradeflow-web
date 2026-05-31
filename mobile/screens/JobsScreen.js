@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -10,24 +10,42 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
+import JobFilters from '../components/JobFilters'
 import JobListItem from '../components/JobListItem'
 import JobDetailScreen from './JobDetailScreen'
 import { useJobsRealtime } from '../hooks/useJobsRealtime'
+import { filterJobs } from '../lib/jobUtils'
 
 export default function JobsScreen({ embedded = false, refreshKey = 0, onSubViewChange }) {
   const { profile } = useAuth()
   const isAdmin = profile.role === 'admin'
   const [jobs, setJobs] = useState([])
+  const [workers, setWorkers] = useState([])
   const [selectedJobId, setSelectedJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [workerFilter, setWorkerFilter] = useState('')
 
   useEffect(() => {
     if (embedded) {
       onSubViewChange?.(!!selectedJobId)
     }
   }, [embedded, selectedJobId, onSubViewChange])
+
+  async function fetchWorkers() {
+    if (!isAdmin) return
+
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('role', 'worker')
+      .order('name')
+
+    setWorkers(data ?? [])
+  }
 
   async function fetchJobs() {
     setErrorMessage('')
@@ -54,8 +72,25 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
 
   useEffect(() => {
     setLoading(true)
+    if (isAdmin) {
+      fetchWorkers()
+    }
     fetchJobs().finally(() => setLoading(false))
-  }, [profile.id, profile.role, refreshKey])
+  }, [profile.id, profile.role, refreshKey, isAdmin])
+
+  const filteredJobs = useMemo(
+    () =>
+      filterJobs(jobs, {
+        search,
+        status: statusFilter,
+        workerId: isAdmin ? workerFilter : '',
+      }),
+    [jobs, isAdmin, search, statusFilter, workerFilter],
+  )
+
+  const hasActiveFilters = Boolean(
+    search.trim() || statusFilter || (isAdmin && workerFilter),
+  )
 
   const refreshJobs = useCallback(() => {
     fetchJobs()
@@ -94,23 +129,46 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
         <Text style={styles.error}>{errorMessage}</Text>
       ) : (
         <FlatList
-          data={jobs}
+          data={filteredJobs}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <JobListItem job={item} onPress={setSelectedJobId} />
           )}
+          ListHeaderComponent={
+            <>
+              <JobFilters
+                search={search}
+                onSearchChange={setSearch}
+                status={statusFilter}
+                onStatusChange={setStatusFilter}
+                workerId={workerFilter}
+                onWorkerIdChange={setWorkerFilter}
+                workers={workers}
+                showWorkerFilter={isAdmin}
+              />
+              {hasActiveFilters ? (
+                <Text style={styles.filterSummary}>
+                  Showing {filteredJobs.length} of {jobs.length} jobs
+                </Text>
+              ) : null}
+            </>
+          }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {isAdmin
-                ? 'No jobs yet. Open the Create job tab to add one.'
-                : 'No jobs assigned to you yet. Ask admin to assign a job.'}
+              {jobs.length === 0
+                ? isAdmin
+                  ? 'No jobs yet. Open the Create job tab to add one.'
+                  : 'No jobs assigned to you yet. Ask admin to assign a job.'
+                : 'No jobs match your search or filters.'}
             </Text>
           }
           contentContainerStyle={
-            jobs.length === 0 ? styles.emptyContainer : styles.list
+            filteredJobs.length === 0
+              ? styles.emptyContainerWithFilters
+              : styles.list
           }
         />
       )}
@@ -139,10 +197,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
+  filterSummary: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    fontSize: 13,
+    color: '#6b7280',
+  },
   emptyContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  emptyContainerWithFilters: {
+    flexGrow: 1,
     paddingBottom: 24,
   },
   empty: {

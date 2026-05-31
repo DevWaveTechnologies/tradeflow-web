@@ -3,6 +3,41 @@ export function formatStatus(status) {
   return status.replace(/_/g, ' ')
 }
 
+export const JOB_STATUS_FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'done', label: 'Completed' },
+]
+
+export function normalizeJobStatus(status) {
+  return status || 'pending'
+}
+
+export function filterJobs(jobs, { search = '', status = '', workerId = '' } = {}) {
+  const query = search.trim().toLowerCase()
+
+  return jobs.filter((job) => {
+    if (status && normalizeJobStatus(job.status) !== status) {
+      return false
+    }
+
+    if (workerId && job.assigned_to !== workerId) {
+      return false
+    }
+
+    if (query) {
+      const title = (job.title ?? '').toLowerCase()
+      const customer = (job.companies?.name ?? '').toLowerCase()
+      if (!title.includes(query) && !customer.includes(query)) {
+        return false
+      }
+    }
+
+    return true
+  })
+}
+
 export function formatJobDate(isoDate) {
   if (!isoDate) return '—'
   return new Date(isoDate).toLocaleDateString(undefined, {
