@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
 import { formatJobDate, formatStatus, workerNameForJob } from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
+import JobPhotosSection from '../components/JobPhotosSection'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
@@ -213,6 +214,7 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
           </View>
         ) : null}
 
+        <JobPhotosSection jobId={jobId} authorId={profile.id} />
         <JobNotesSection jobId={jobId} authorId={profile.id} />
       </KeyboardAwareScreen>
     </View>

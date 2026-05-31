@@ -19,7 +19,14 @@
     },
     "plugins": [
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow TradeFlow to attach before and after job photos.",
+          "cameraPermission": "Allow TradeFlow to take before and after job photos."
+        }
+      ]
     ]
   }
 }
