@@ -40,14 +40,17 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="relative flex min-h-svh items-center justify-center bg-cover bg-center bg-no-repeat p-6"
-      style={{ backgroundImage: `url(${loginBackground})` }}
-    >
-      <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
+    <div className="relative min-h-svh w-full">
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url("${loginBackground}")` }}
+        aria-hidden="true"
+      />
+      <div className="fixed inset-0 bg-black/35" aria-hidden="true" />
 
-      <section className="relative z-10 w-full max-w-md rounded-lg border border-white/30 bg-white/95 p-6 text-left shadow-xl backdrop-blur-sm">
-        <h1 className="text-2xl font-bold text-gray-900">TradeFlow</h1>
+      <div className="relative z-10 flex min-h-svh items-center justify-center p-6">
+        <section className="w-full max-w-md rounded-lg border border-white/30 bg-white/95 p-6 text-left shadow-xl backdrop-blur-sm">
+          <h1 className="text-2xl font-bold text-gray-900">TradeFlow</h1>
         <p className="mt-1 text-sm text-gray-600">
           Sign in as admin or worker. Your role is set on your account in Supabase.
         </p>
@@ -93,7 +96,8 @@ export default function Login() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-      </section>
+        </section>
+      </div>
     </div>
   )
 }
