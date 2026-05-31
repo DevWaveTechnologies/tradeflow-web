@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { formatJobDate, formatStatus, workerNameForJob } from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
+import JobPhotosSection from '../components/JobPhotosSection'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -213,6 +214,7 @@ export default function JobDetailPage() {
         </div>
       ) : null}
 
+      <JobPhotosSection jobId={id} authorId={profile.id} />
       <JobNotesSection jobId={id} authorId={profile.id} />
     </article>
   )
