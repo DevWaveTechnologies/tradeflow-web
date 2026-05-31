@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatNoteDate } from '../lib/jobUtils'
+import { fetchProfileNames } from '../lib/profileNames'
 
 async function fetchNotesWithAuthors(jobId) {
   const { data: notes, error } = await supabase
@@ -19,9 +20,7 @@ async function fetchNotesWithAuthors(jobId) {
   }
 
   const authorIds = [...new Set(rows.map((note) => note.author_id))]
-  const { data: authors } = await supabase.from('profiles').select('id, name').in('id', authorIds)
-
-  const nameById = Object.fromEntries((authors ?? []).map((a) => [a.id, a.name]))
+  const nameById = await fetchProfileNames(supabase, authorIds)
 
   return {
     notes: rows.map((note) => ({
@@ -32,7 +31,7 @@ async function fetchNotesWithAuthors(jobId) {
   }
 }
 
-export default function JobNotesSection({ jobId, authorId }) {
+export default function JobNotesSection({ jobId, authorId, onRecorded }) {
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
   const [body, setBody] = useState('')
@@ -84,6 +83,7 @@ export default function JobNotesSection({ jobId, authorId }) {
 
     setBody('')
     await fetchNotes()
+    onRecorded?.()
   }
 
   return (

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { formatJobDate, formatStatus, workerNameForJob } from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
+import JobActivitySection from '../components/JobActivitySection'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -17,6 +18,11 @@ export default function JobDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0)
+
+  function bumpActivity() {
+    setActivityRefreshKey((key) => key + 1)
+  }
 
   useEffect(() => {
     if (isAdmin) {
@@ -86,6 +92,7 @@ export default function JobDetailPage() {
     }
 
     setJob((current) => (current ? { ...current, status } : current))
+    bumpActivity()
   }
 
   async function assignWorker(workerId) {
@@ -107,6 +114,7 @@ export default function JobDetailPage() {
     }
 
     setJob((current) => (current ? { ...current, assigned_to: workerId } : current))
+    bumpActivity()
   }
 
   if (loading) {
@@ -214,8 +222,9 @@ export default function JobDetailPage() {
         </div>
       ) : null}
 
-      <JobPhotosSection jobId={id} authorId={profile.id} />
-      <JobNotesSection jobId={id} authorId={profile.id} />
+      <JobPhotosSection jobId={id} authorId={profile.id} onRecorded={bumpActivity} />
+      <JobNotesSection jobId={id} authorId={profile.id} onRecorded={bumpActivity} />
+      <JobActivitySection jobId={id} refreshKey={activityRefreshKey} />
     </article>
   )
 }

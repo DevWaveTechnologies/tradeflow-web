@@ -92,7 +92,7 @@ function PhotoTypeSection({ title, description, photoType, photos, uploading, on
   )
 }
 
-export default function JobPhotosSection({ jobId, authorId }) {
+export default function JobPhotosSection({ jobId, authorId, onRecorded }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -165,6 +165,7 @@ export default function JobPhotosSection({ jobId, authorId }) {
       }
 
       await loadPhotos()
+      onRecorded?.()
     } catch (err) {
       setErrorMessage(formatPhotoError(err))
     } finally {
