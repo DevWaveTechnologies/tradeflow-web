@@ -37,7 +37,11 @@ export default function AdminShellScreen() {
       ) : null}
       <View style={styles.content}>
         {page === 'jobs' ? (
-          <JobsScreen embedded refreshKey={jobsRefreshKey} />
+          <JobsScreen
+            embedded
+            refreshKey={jobsRefreshKey}
+            onSubViewChange={setHideChrome}
+          />
         ) : page === 'create' ? (
           <CreateJobScreen onCreated={handleJobCreated} />
         ) : (

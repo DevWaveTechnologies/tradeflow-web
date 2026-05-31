@@ -1,0 +1,5 @@
+-- Link auth users to profiles (replace UUIDs from Authentication → Users)
+-- INSERT INTO public.profiles (id, name, role) VALUES
+--   ('ADMIN_AUTH_UID', 'John', 'admin'),
+--   ('WORKER_AUTH_UID', 'Dave', 'worker')
+-- ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, role = EXCLUDED.role;

@@ -75,10 +75,34 @@ FOR DELETE
 TO authenticated
 USING (public.is_admin());
 
--- Read companies for job cards (admin + worker)
+-- Customers (public.companies): read for all; admin CRUD
+ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
+
 DROP POLICY IF EXISTS "Authenticated read companies" ON public.companies;
 CREATE POLICY "Authenticated read companies"
 ON public.companies
 FOR SELECT
 TO authenticated
 USING (true);
+
+DROP POLICY IF EXISTS "Admins insert companies" ON public.companies;
+CREATE POLICY "Admins insert companies"
+ON public.companies
+FOR INSERT
+TO authenticated
+WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins update companies" ON public.companies;
+CREATE POLICY "Admins update companies"
+ON public.companies
+FOR UPDATE
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins delete companies" ON public.companies;
+CREATE POLICY "Admins delete companies"
+ON public.companies
+FOR DELETE
+TO authenticated
+USING (public.is_admin());

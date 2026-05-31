@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -10,6 +8,7 @@ import {
   View,
 } from 'react-native'
 import { useAuth } from '../context/AuthContext'
+import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
@@ -31,10 +30,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAwareScreen style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.card}>
         <Text style={styles.title}>TradeFlow</Text>
         <Text style={styles.subtitle}>Sign in as admin or worker</Text>
@@ -70,16 +66,19 @@ export default function LoginScreen() {
           )}
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScreen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#f3f4f6',
   },
   card: {
     backgroundColor: '#fff',

@@ -10,33 +10,24 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
-import JobCard from '../components/JobCard'
+import JobListItem from '../components/JobListItem'
+import JobDetailScreen from './JobDetailScreen'
 import { useJobsRealtime } from '../hooks/useJobsRealtime'
 
-export default function JobsScreen({ embedded = false, refreshKey = 0 }) {
+export default function JobsScreen({ embedded = false, refreshKey = 0, onSubViewChange }) {
   const { profile } = useAuth()
   const isAdmin = profile.role === 'admin'
   const [jobs, setJobs] = useState([])
-  const [workers, setWorkers] = useState([])
+  const [selectedJobId, setSelectedJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [assigningJobId, setAssigningJobId] = useState(null)
-  const [updatingJobId, setUpdatingJobId] = useState(null)
 
-  async function fetchWorkers() {
-    if (!isAdmin) return
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .eq('role', 'worker')
-      .order('name')
-
-    if (!error) {
-      setWorkers(data ?? [])
+  useEffect(() => {
+    if (embedded) {
+      onSubViewChange?.(!!selectedJobId)
     }
-  }
+  }, [embedded, selectedJobId, onSubViewChange])
 
   async function fetchJobs() {
     setErrorMessage('')
@@ -61,13 +52,9 @@ export default function JobsScreen({ embedded = false, refreshKey = 0 }) {
     setJobs(data ?? [])
   }
 
-  async function loadAll() {
-    await Promise.all([fetchWorkers(), fetchJobs()])
-  }
-
   useEffect(() => {
     setLoading(true)
-    loadAll().finally(() => setLoading(false))
+    fetchJobs().finally(() => setLoading(false))
   }, [profile.id, profile.role, refreshKey])
 
   const refreshJobs = useCallback(() => {
@@ -78,62 +65,18 @@ export default function JobsScreen({ embedded = false, refreshKey = 0 }) {
 
   async function handleRefresh() {
     setRefreshing(true)
-    await loadAll()
+    await fetchJobs()
     setRefreshing(false)
   }
 
-  async function updateJobStatus(jobId, status) {
-    setErrorMessage('')
-    setUpdatingJobId(jobId)
-
-    let query = supabase.from('jobs').update({ status }).eq('id', jobId)
-
-    if (!isAdmin) {
-      query = query.eq('assigned_to', profile.id)
-    }
-
-    const { error } = await query
-    setUpdatingJobId(null)
-
-    if (error) {
-      setErrorMessage(error.message)
-      return
-    }
-
-    setJobs((current) =>
-      current.map((job) => (job.id === jobId ? { ...job, status } : job)),
+  if (selectedJobId) {
+    return (
+      <JobDetailScreen
+        jobId={selectedJobId}
+        onBack={() => setSelectedJobId(null)}
+        onUpdated={fetchJobs}
+      />
     )
-  }
-
-  async function assignWorker(jobId, workerId) {
-    if (!isAdmin) return
-
-    setErrorMessage('')
-    setAssigningJobId(jobId)
-
-    const previousJobs = jobs
-    setJobs((current) =>
-      current.map((job) =>
-        job.id === jobId ? { ...job, assigned_to: workerId } : job,
-      ),
-    )
-
-    const { error } = await supabase
-      .from('jobs')
-      .update({ assigned_to: workerId })
-      .eq('id', jobId)
-
-    setAssigningJobId(null)
-
-    if (error) {
-      setJobs(previousJobs)
-      setErrorMessage(error.message)
-    }
-  }
-
-  function workerNameForJob(job) {
-    if (!job.assigned_to) return 'Unassigned'
-    return workers.find((w) => w.id === job.assigned_to)?.name ?? 'Assigned'
   }
 
   return (
@@ -154,16 +97,7 @@ export default function JobsScreen({ embedded = false, refreshKey = 0 }) {
           data={jobs}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <JobCard
-              job={item}
-              workerName={isAdmin ? workerNameForJob(item) : null}
-              showAssign={isAdmin}
-              workers={workers}
-              onAssignWorker={assignWorker}
-              onStatusChange={updateJobStatus}
-              assigning={assigningJobId === item.id}
-              updatingStatus={updatingJobId === item.id}
-            />
+            <JobListItem job={item} onPress={setSelectedJobId} />
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

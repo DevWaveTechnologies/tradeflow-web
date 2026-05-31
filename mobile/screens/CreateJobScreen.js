@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +9,7 @@ import {
 } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { supabase } from '../lib/supabase'
+import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 export default function CreateJobScreen({ onCreated }) {
   const [customers, setCustomers] = useState([])
@@ -92,14 +90,7 @@ export default function CreateJobScreen({ onCreated }) {
   const canSubmit = !submitting && !loadingCustomers && customers.length > 0
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
+    <KeyboardAwareScreen contentContainerStyle={styles.scroll}>
         <View style={styles.card}>
           <Text style={styles.heading}>Create job</Text>
 
@@ -180,19 +171,13 @@ export default function CreateJobScreen({ onCreated }) {
             </Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScreen>
   )
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 32,
   },
   card: {
     backgroundColor: '#fff',

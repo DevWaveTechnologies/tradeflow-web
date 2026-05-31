@@ -1,13 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function CreateJobForm({ onCreated }) {
+  const [customers, setCustomers] = useState([])
+  const [loadingCustomers, setLoadingCustomers] = useState(true)
+  const [companyId, setCompanyId] = useState('')
   const [title, setTitle] = useState('')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
+
+  async function fetchCustomers() {
+    setLoadingCustomers(true)
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, name, address')
+      .order('name')
+
+    setLoadingCustomers(false)
+
+    if (!error) {
+      setCustomers(data ?? [])
+    }
+  }
+
+  function handleCustomerChange(event) {
+    const id = event.target.value
+    setCompanyId(id)
+
+    const customer = customers.find((c) => c.id === id)
+    if (customer?.address && !address.trim()) {
+      setAddress(customer.address)
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -19,10 +50,16 @@ export default function CreateJobForm({ onCreated }) {
       return
     }
 
+    if (!companyId) {
+      setErrorMessage('Select a customer for this job.')
+      return
+    }
+
     setSubmitting(true)
 
     const { error } = await supabase.from('jobs').insert({
       title: title.trim(),
+      company_id: companyId,
       address: address.trim() || null,
       notes: notes.trim() || null,
     })
@@ -34,6 +71,7 @@ export default function CreateJobForm({ onCreated }) {
       return
     }
 
+    setCompanyId('')
     setTitle('')
     setAddress('')
     setNotes('')
@@ -46,6 +84,34 @@ export default function CreateJobForm({ onCreated }) {
       <h2 className="text-xl font-semibold text-gray-900">Create job</h2>
 
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="job-customer" className="mb-1 block text-sm font-medium">
+            Customer <span className="text-red-600">*</span>
+          </label>
+          {loadingCustomers ? (
+            <p className="text-sm text-gray-500">Loading customers…</p>
+          ) : customers.length === 0 ? (
+            <p className="text-sm text-amber-700">
+              No customers yet. Open the Customers tab and add one first.
+            </p>
+          ) : (
+            <select
+              id="job-customer"
+              value={companyId}
+              onChange={handleCustomerChange}
+              className="w-full rounded border px-3 py-2"
+              required
+            >
+              <option value="">Select customer…</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div>
           <label htmlFor="job-title" className="mb-1 block text-sm font-medium">
             Title
@@ -63,7 +129,7 @@ export default function CreateJobForm({ onCreated }) {
 
         <div>
           <label htmlFor="job-address" className="mb-1 block text-sm font-medium">
-            Address
+            Job site address
           </label>
           <input
             id="job-address"
@@ -71,7 +137,7 @@ export default function CreateJobForm({ onCreated }) {
             value={address}
             onChange={(event) => setAddress(event.target.value)}
             className="w-full rounded border px-3 py-2"
-            placeholder="e.g. Swansea"
+            placeholder="e.g. Swansea (can differ from customer address)"
           />
         </div>
 
@@ -94,7 +160,7 @@ export default function CreateJobForm({ onCreated }) {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || loadingCustomers || customers.length === 0}
           className="rounded bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting ? 'Saving…' : 'Create job'}

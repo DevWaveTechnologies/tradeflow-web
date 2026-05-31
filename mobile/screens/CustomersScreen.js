@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,6 +13,7 @@ import { supabase } from '../lib/supabase'
 import { customerToForm, emptyCustomerForm, formToPayload } from '../lib/customers'
 import AppHeader from '../components/AppHeader'
 import CustomerFormFields from '../components/CustomerFormFields'
+import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
   if (!value) return null
@@ -166,15 +165,9 @@ export default function CustomersScreen({ embedded = false, onSubViewChange }) {
   if (mode === 'create' || mode === 'edit') {
     const isEdit = mode === 'edit'
     return (
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <>
         <AppHeader title={isEdit ? 'Edit customer' : 'New customer'} subtitle="Admin" />
-        <ScrollView
-          contentContainerStyle={styles.formScroll}
-          keyboardShouldPersistTaps="handled"
-        >
+        <KeyboardAwareScreen contentContainerStyle={styles.formScroll}>
           <Pressable onPress={backToList}>
             <Text style={styles.backLink}>← Customers</Text>
           </Pressable>
@@ -203,8 +196,8 @@ export default function CustomersScreen({ embedded = false, onSubViewChange }) {
               </Pressable>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScreen>
+      </>
     )
   }
 

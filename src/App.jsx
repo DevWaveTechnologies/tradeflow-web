@@ -1,8 +1,10 @@
+import { Route, Routes } from 'react-router-dom'
 import Login from './components/Login'
 import AppHeader from './components/AppHeader'
 import LogoutButton from './components/LogoutButton'
-import AdminDashboard from './components/AdminDashboard'
+import AdminShell from './components/AdminShell'
 import WorkerDashboard from './components/WorkerDashboard'
+import JobDetailPage from './pages/JobDetailPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 function AppContent() {
@@ -37,7 +39,7 @@ function AppContent() {
           </p>
         ) : (
           <p className="mt-4 text-red-600">
-            Signed in, but no matching row in <code>public.users</code>. Add a row with
+            Signed in, but no matching row in <code>public.profiles</code>. Add a row with
             this id and role <code>admin</code> or <code>worker</code>:
           </p>
         )}
@@ -65,14 +67,30 @@ function AppContent() {
   }
 
   return (
-    <div className="p-10">
-      <AppHeader />
-      {profile.role === 'admin' ? (
-        <AdminDashboard />
-      ) : (
-        <WorkerDashboard profile={profile} />
-      )}
-    </div>
+    <Routes>
+      <Route
+        path="/jobs/:id"
+        element={
+          <div className="p-10">
+            <AppHeader />
+            <JobDetailPage />
+          </div>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <div className="p-10">
+            <AppHeader />
+            {profile.role === 'admin' ? (
+              <AdminShell />
+            ) : (
+              <WorkerDashboard profile={profile} />
+            )}
+          </div>
+        }
+      />
+    </Routes>
   )
 }
 

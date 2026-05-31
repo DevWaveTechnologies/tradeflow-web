@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 
 export default function CustomerFormFields({ form, onChange }) {
+
   function setField(key, value) {
     onChange({ ...form, [key]: value })
   }
