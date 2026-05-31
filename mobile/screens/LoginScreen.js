@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
   StyleSheet,
   Text,
@@ -9,6 +10,8 @@ import {
 } from 'react-native'
 import { useAuth } from '../context/AuthContext'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
+
+const loginBackground = require('../../src/assets/Trafeflow login image.png')
 
 export default function LoginScreen() {
   const { signIn } = useAuth()
@@ -30,50 +33,66 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAwareScreen style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.card}>
-        <Text style={styles.title}>TradeFlow</Text>
-        <Text style={styles.subtitle}>Sign in as admin or worker</Text>
+    <View style={styles.root}>
+      <ImageBackground source={loginBackground} style={styles.background} resizeMode="cover">
+        <View style={styles.overlay} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <KeyboardAwareScreen style={styles.screen} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.card}>
+            <Text style={styles.title}>TradeFlow</Text>
+            <Text style={styles.subtitle}>Sign in as admin or worker</Text>
 
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
 
-        <Pressable
-          style={[styles.button, submitting && styles.buttonDisabled]}
-          onPress={handleSignIn}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAwareScreen>
+            {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+            <Pressable
+              style={[styles.button, submitting && styles.buttonDisabled]}
+              onPress={handleSignIn}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Sign in</Text>
+              )}
+            </Pressable>
+          </View>
+        </KeyboardAwareScreen>
+      </ImageBackground>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+  },
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     flexGrow: 1,
@@ -81,11 +100,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   title: {
     fontSize: 28,

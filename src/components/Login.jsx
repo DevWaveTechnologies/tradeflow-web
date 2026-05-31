@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import loginBackground from '../assets/Trafeflow login image.png'
 
 function loginErrorMessage(error) {
   const message = error?.message ?? 'Sign in failed.'
@@ -39,8 +40,13 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center p-10">
-      <section className="w-full max-w-md rounded border p-6 text-left">
+    <div
+      className="relative flex min-h-svh items-center justify-center bg-cover bg-center bg-no-repeat p-6"
+      style={{ backgroundImage: `url(${loginBackground})` }}
+    >
+      <div className="absolute inset-0 bg-black/35" aria-hidden="true" />
+
+      <section className="relative z-10 w-full max-w-md rounded-lg border border-white/30 bg-white/95 p-6 text-left shadow-xl backdrop-blur-sm">
         <h1 className="text-2xl font-bold text-gray-900">TradeFlow</h1>
         <p className="mt-1 text-sm text-gray-600">
           Sign in as admin or worker. Your role is set on your account in Supabase.
