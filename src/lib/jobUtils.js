@@ -48,6 +48,35 @@ export function formatJobDate(isoDate) {
   })
 }
 
+export function formatScheduledDate(dateKey) {
+  if (!dateKey) return '—'
+  const [y, m, d] = dateKey.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+export function formatScheduledTime(time) {
+  if (!time) return ''
+  const [hours, minutes] = time.split(':')
+  const date = new Date()
+  date.setHours(Number(hours), Number(minutes), 0, 0)
+  return date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+export function formatScheduledDateTime(dateKey, time) {
+  if (!dateKey) return 'Not scheduled'
+  const dateLabel = formatScheduledDate(dateKey)
+  const timeLabel = formatScheduledTime(time)
+  return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel
+}
+
 export function formatNoteDate(isoDate) {
   if (!isoDate) return '—'
   return new Date(isoDate).toLocaleString(undefined, {

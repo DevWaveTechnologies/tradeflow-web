@@ -18,6 +18,8 @@ export default function CreateJobScreen({ onCreated }) {
   const [title, setTitle] = useState('')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [scheduledStartTime, setScheduledStartTime] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -70,6 +72,8 @@ export default function CreateJobScreen({ onCreated }) {
       company_id: companyId,
       address: address.trim() || null,
       notes: notes.trim() || null,
+      scheduled_date: scheduledDate.trim() || null,
+      scheduled_start_time: scheduledStartTime.trim() || null,
     })
 
     setSubmitting(false)
@@ -83,6 +87,8 @@ export default function CreateJobScreen({ onCreated }) {
     setTitle('')
     setAddress('')
     setNotes('')
+    setScheduledDate('')
+    setScheduledStartTime('')
     setSuccessMessage('Job created.')
     onCreated?.()
   }
@@ -157,6 +163,31 @@ export default function CreateJobScreen({ onCreated }) {
               placeholderTextColor="#9ca3af"
             />
           </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Scheduled date</Text>
+            <TextInput
+              style={styles.input}
+              value={scheduledDate}
+              onChangeText={setScheduledDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Start time</Text>
+            <TextInput
+              style={styles.input}
+              value={scheduledStartTime}
+              onChangeText={setScheduledStartTime}
+              placeholder="09:30"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="none"
+            />
+          </View>
+          <Text style={styles.hint}>Optional — scheduled jobs appear on the web Calendar tab.</Text>
 
           {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
           {successMessage ? <Text style={styles.success}>{successMessage}</Text> : null}

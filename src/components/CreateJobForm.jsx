@@ -8,6 +8,8 @@ export default function CreateJobForm({ onCreated }) {
   const [title, setTitle] = useState('')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [scheduledStartTime, setScheduledStartTime] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -62,6 +64,8 @@ export default function CreateJobForm({ onCreated }) {
       company_id: companyId,
       address: address.trim() || null,
       notes: notes.trim() || null,
+      scheduled_date: scheduledDate || null,
+      scheduled_start_time: scheduledStartTime || null,
     })
 
     setSubmitting(false)
@@ -75,6 +79,8 @@ export default function CreateJobForm({ onCreated }) {
     setTitle('')
     setAddress('')
     setNotes('')
+    setScheduledDate('')
+    setScheduledStartTime('')
     setSuccessMessage('Job created.')
     onCreated?.()
   }
@@ -154,6 +160,36 @@ export default function CreateJobForm({ onCreated }) {
             placeholder="e.g. Customer reports leak"
           />
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="job-scheduled-date" className="mb-1 block text-sm font-medium">
+              Scheduled date
+            </label>
+            <input
+              id="job-scheduled-date"
+              type="date"
+              value={scheduledDate}
+              onChange={(event) => setScheduledDate(event.target.value)}
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="job-scheduled-time" className="mb-1 block text-sm font-medium">
+              Start time
+            </label>
+            <input
+              id="job-scheduled-time"
+              type="time"
+              value={scheduledStartTime}
+              onChange={(event) => setScheduledStartTime(event.target.value)}
+              className="w-full rounded border px-3 py-2"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">
+          Optional — scheduled jobs appear on the Calendar tab.
+        </p>
 
         {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
         {successMessage ? <p className="text-sm text-green-700">{successMessage}</p> : null}

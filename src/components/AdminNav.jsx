@@ -13,6 +13,13 @@ export default function AdminNav({ page, onPageChange }) {
       </button>
       <button
         type="button"
+        className={linkClass('calendar')}
+        onClick={() => onPageChange('calendar')}
+      >
+        Calendar
+      </button>
+      <button
+        type="button"
         className={linkClass('customers')}
         onClick={() => onPageChange('customers')}
       >

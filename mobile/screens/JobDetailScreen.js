@@ -10,7 +10,7 @@ import { Picker } from '@react-native-picker/picker'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
-import { formatJobDate, formatStatus, workerNameForJob } from '../lib/jobUtils'
+import { formatJobDate, formatScheduledDateTime, formatStatus, workerNameForJob } from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
@@ -178,6 +178,7 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
             label="Assigned worker"
             value={workerNameForJob(job, workers)}
           />
+          <DetailRow label="Scheduled" value={formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)} />
           <DetailRow label="Date" value={formatJobDate(job.created_at)} />
         </View>
 

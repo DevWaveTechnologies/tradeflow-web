@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { formatJobDate, formatStatus, workerNameForJob } from '../lib/jobUtils'
+import { formatJobDate, formatScheduledDateTime, formatStatus, workerNameForJob } from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
@@ -170,6 +170,12 @@ export default function JobDetailPage() {
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Assigned worker</dt>
           <dd className="text-sm text-gray-900 sm:col-span-2">{worker}</dd>
+        </div>
+        <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
+          <dt className="text-sm font-medium text-gray-500">Scheduled</dt>
+          <dd className="text-sm text-gray-900 sm:col-span-2">
+            {formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)}
+          </dd>
         </div>
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Date</dt>
