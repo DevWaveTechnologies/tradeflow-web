@@ -2,6 +2,7 @@ import { useState } from 'react'
 import AdminNav from './AdminNav'
 import AdminDashboard from './AdminDashboard'
 import CalendarPage from './CalendarPage'
+import DispatchBoard from './DispatchBoard'
 import CustomersPage from './CustomersPage'
 
 export default function AdminShell() {
@@ -12,6 +13,7 @@ export default function AdminShell() {
       <AdminNav page={page} onPageChange={setPage} />
       {page === 'jobs' ? <AdminDashboard /> : null}
       {page === 'calendar' ? <CalendarPage /> : null}
+      {page === 'dispatch' ? <DispatchBoard /> : null}
       {page === 'customers' ? <CustomersPage /> : null}
     </>
   )

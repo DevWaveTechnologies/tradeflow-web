@@ -20,6 +20,13 @@ export default function AdminNav({ page, onPageChange }) {
       </button>
       <button
         type="button"
+        className={linkClass('dispatch')}
+        onClick={() => onPageChange('dispatch')}
+      >
+        Dispatch
+      </button>
+      <button
+        type="button"
         className={linkClass('customers')}
         onClick={() => onPageChange('customers')}
       >
