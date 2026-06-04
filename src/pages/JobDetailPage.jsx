@@ -14,6 +14,8 @@ import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
 import JobEditableField, { EditActions, PencilButton } from '../components/JobEditableField'
+import CustomerContactActions from '../components/CustomerContactActions'
+import MapsAction from '../components/MapsAction'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -204,7 +206,8 @@ export default function JobDetailPage() {
     )
   }
 
-  const customer = job.companies?.name ?? '—'
+  const customer = job.companies
+  const customerName = customer?.name ?? '—'
   const description = job.notes?.trim() || '—'
   const worker = workerNameForJob(job, workers)
   const inputClass = 'w-full rounded border px-3 py-2 text-sm'
@@ -242,9 +245,12 @@ export default function JobDetailPage() {
       </div>
 
       <dl className="mt-6 divide-y rounded border bg-white">
-        <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
+        <div className="grid gap-2 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Customer</dt>
-          <dd className="text-sm text-gray-900 sm:col-span-2">{customer}</dd>
+          <dd className="space-y-2 text-sm text-gray-900 sm:col-span-2">
+            <span>{customerName}</span>
+            <CustomerContactActions customer={customer} />
+          </dd>
         </div>
 
         <JobEditableField
@@ -276,6 +282,7 @@ export default function JobDetailPage() {
           isEditing={editingField === 'address'}
           onEdit={() => startEdit('address')}
           display={job.address?.trim() || '—'}
+          footer={editingField !== 'address' ? <MapsAction address={job.address} /> : null}
           actions={
             <EditActions
               onSave={() => saveField('address')}

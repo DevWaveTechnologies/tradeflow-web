@@ -18,6 +18,7 @@ export default function JobEditableField({
   isEditing,
   onEdit,
   display,
+  footer,
   children,
   actions,
 }) {
@@ -34,7 +35,10 @@ export default function JobEditableField({
             {actions}
           </div>
         ) : (
-          display
+          <div className="space-y-2">
+            {display}
+            {footer}
+          </div>
         )}
       </dd>
     </div>

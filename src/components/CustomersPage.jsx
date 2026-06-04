@@ -5,6 +5,7 @@ import CustomerFormFields, {
   emptyCustomerForm,
   formToPayload,
 } from './CustomerFormFields'
+import CustomerContactActions from './CustomerContactActions'
 
 function CustomerDetailView({ customer }) {
   const rows = [
@@ -15,7 +16,9 @@ function CustomerDetailView({ customer }) {
   ]
 
   return (
-    <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+    <>
+      <CustomerContactActions customer={customer} className="mt-4" />
+      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
       {rows.map(([label, value]) =>
         value ? (
           <div key={label} className={label === 'Notes' ? 'sm:col-span-2' : ''}>
@@ -28,6 +31,7 @@ function CustomerDetailView({ customer }) {
         <p className="text-sm text-gray-500 sm:col-span-2">No extra details on file.</p>
       ) : null}
     </dl>
+    </>
   )
 }
 
@@ -264,11 +268,11 @@ export default function CustomersPage() {
       ) : (
         <ul className="mt-6 space-y-3">
           {customers.map((customer) => (
-            <li key={customer.id}>
+            <li key={customer.id} className="overflow-hidden rounded border">
               <button
                 type="button"
                 onClick={() => openView(customer)}
-                className="w-full rounded border p-4 text-left hover:bg-gray-50"
+                className="w-full p-4 text-left hover:bg-gray-50"
               >
                 <span className="font-medium text-gray-900">{customer.name}</span>
                 {customer.phone || customer.email ? (
@@ -277,6 +281,9 @@ export default function CustomersPage() {
                   </p>
                 ) : null}
               </button>
+              <div className="px-4 pb-3">
+                <CustomerContactActions customer={customer} compact />
+              </div>
             </li>
           ))}
         </ul>

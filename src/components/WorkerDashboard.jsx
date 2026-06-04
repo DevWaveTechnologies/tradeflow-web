@@ -17,7 +17,7 @@ export default function WorkerDashboard({ profile }) {
   async function fetchJobs() {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, companies(name)')
+      .select('*, companies(name, phone, email, address)')
       .eq('assigned_to', profile.id)
       .order('created_at', { ascending: false })
 
