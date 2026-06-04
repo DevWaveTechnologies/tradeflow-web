@@ -56,7 +56,7 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
 
     let query = supabase
       .from('jobs')
-      .select('*, companies(name)')
+      .select('*, companies(name, phone, email, address)')
       .order('created_at', { ascending: false })
 
     if (!isAdmin) {

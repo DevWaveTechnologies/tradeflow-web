@@ -23,6 +23,8 @@ import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
 import JobEditableRow, { EditActions, PencilButton } from '../components/JobEditableRow'
+import CustomerContactActions from '../components/CustomerContactActions'
+import MapsAction from '../components/MapsAction'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
@@ -250,7 +252,11 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
         </Pressable>
 
         <View style={styles.card}>
-          <DetailRow label="Customer" value={job.companies?.name ?? '—'} />
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Customer</Text>
+            <Text style={styles.rowValue}>{job.companies?.name ?? '—'}</Text>
+            <CustomerContactActions customer={job.companies} />
+          </View>
 
           {isAdmin && editingField === 'title' ? (
             <View style={styles.row}>
@@ -298,6 +304,11 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
           <JobEditableRow
             label="Job site"
             value={job.address?.trim() || '—'}
+            footer={
+              editingField !== 'address' ? (
+                <MapsAction address={job.address} style={styles.mapsAction} />
+              ) : null
+            }
             canEdit={isAdmin}
             isEditing={editingField === 'address'}
             onEdit={() => startEdit('address')}
@@ -437,6 +448,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#111827',
     lineHeight: 22,
+  },
+  mapsAction: {
+    marginTop: 8,
   },
   input: {
     borderWidth: 1,

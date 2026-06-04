@@ -34,7 +34,16 @@ export function EditActions({ onSave, onCancel, saving }) {
   )
 }
 
-export default function JobEditableRow({ label, value, canEdit, isEditing, onEdit, editor, actions }) {
+export default function JobEditableRow({
+  label,
+  value,
+  canEdit,
+  isEditing,
+  onEdit,
+  editor,
+  actions,
+  footer,
+}) {
   return (
     <View style={styles.row}>
       <View style={styles.labelRow}>
@@ -47,7 +56,10 @@ export default function JobEditableRow({ label, value, canEdit, isEditing, onEdi
           {actions}
         </View>
       ) : (
-        <Text style={styles.rowValue}>{value}</Text>
+        <>
+          <Text style={styles.rowValue}>{value}</Text>
+          {footer}
+        </>
       )}
     </View>
   )

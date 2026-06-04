@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase'
 import { customerToForm, emptyCustomerForm, formToPayload } from '../lib/customers'
 import AppHeader from '../components/AppHeader'
 import CustomerFormFields from '../components/CustomerFormFields'
+import CustomerContactActions from '../components/CustomerContactActions'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
@@ -211,6 +212,7 @@ export default function CustomersScreen({ embedded = false, onSubViewChange }) {
           </Pressable>
 
           <View style={styles.card}>
+            <CustomerContactActions customer={selected} />
             <DetailRow label="Phone" value={selected.phone} />
             <DetailRow label="Email" value={selected.email} />
             <DetailRow label="Address" value={selected.address} />
@@ -262,14 +264,21 @@ export default function CustomersScreen({ embedded = false, onSubViewChange }) {
             </Text>
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.listCard} onPress={() => openView(item)}>
-              <Text style={styles.listTitle}>{item.name}</Text>
-              {item.phone || item.email ? (
-                <Text style={styles.listMeta}>
-                  {[item.phone, item.email].filter(Boolean).join(' · ')}
-                </Text>
-              ) : null}
-            </Pressable>
+            <View style={styles.listCard}>
+              <Pressable onPress={() => openView(item)}>
+                <Text style={styles.listTitle}>{item.name}</Text>
+                {item.phone || item.email ? (
+                  <Text style={styles.listMeta}>
+                    {[item.phone, item.email].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : null}
+              </Pressable>
+              <CustomerContactActions
+                customer={item}
+                compact
+                style={styles.listActions}
+              />
+            </View>
           )}
         />
       )}
@@ -324,6 +333,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     color: '#6b7280',
+  },
+  listActions: {
+    marginTop: 10,
   },
   detailRow: {
     marginBottom: 8,

@@ -1,16 +1,20 @@
-import { Pressable, StyleSheet, Text } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { formatStatus } from '../lib/jobUtils'
+import CustomerContactActions from './CustomerContactActions'
 
 export default function JobListItem({ job, onPress }) {
   const customer = job.companies?.name ?? 'No customer'
 
   return (
-    <Pressable style={styles.card} onPress={() => onPress(job.id)}>
-      <Text style={styles.title}>{job.title}</Text>
-      <Text style={styles.meta}>
-        {customer} · <Text style={styles.status}>{formatStatus(job.status)}</Text>
-      </Text>
-    </Pressable>
+    <View style={styles.card}>
+      <Pressable onPress={() => onPress(job.id)}>
+        <Text style={styles.title}>{job.title}</Text>
+        <Text style={styles.meta}>
+          {customer} · <Text style={styles.status}>{formatStatus(job.status)}</Text>
+        </Text>
+      </Pressable>
+      <CustomerContactActions customer={job.companies} compact style={styles.actions} />
+    </View>
   )
 }
 
@@ -35,5 +39,8 @@ const styles = StyleSheet.create({
   },
   status: {
     textTransform: 'capitalize',
+  },
+  actions: {
+    marginTop: 10,
   },
 })
