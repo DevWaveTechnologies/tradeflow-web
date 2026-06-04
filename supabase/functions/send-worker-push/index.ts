@@ -7,6 +7,8 @@ type JobRow = {
   title: string
   status: string | null
   assigned_to: string | null
+  address: string | null
+  notes: string | null
   scheduled_date: string | null
   scheduled_start_time: string | null
   last_updated_by: string | null
@@ -46,80 +48,170 @@ function normalizeTableName(table: string): string {
   return table.replace(/^public\./, '')
 }
 
+function normalizedText(value: string | null | undefined) {
+  return (value ?? '').trim().replace(/\r\n/g, '\n')
+}
+
+function normalizeEventType(eventType: string): string {
+  return eventType.trim().toUpperCase()
+}
+
+function normalizeDate(value: string | null | undefined) {
+  if (!value) return ''
+  return String(value).slice(0, 10)
+}
+
+function normalizeTime(value: string | null | undefined) {
+  if (!value) return ''
+  return String(value).slice(0, 5)
+}
+
+function isDatabaseWebhookPayload(body: unknown): body is WebhookPayload {
+  if (!body || typeof body !== 'object') return false
+  const row = body as Record<string, unknown>
+  const table = row.table
+  const record = row.record ?? row.new ?? row.new_record
+  return typeof table === 'string' && record != null && typeof record === 'object'
+}
+
+function parseDatabaseWebhook(body: unknown): WebhookPayload | null {
+  if (!isDatabaseWebhookPayload(body)) return null
+  const row = body as Record<string, unknown>
+  const oldRecord = row.old_record ?? row.old
+  return {
+    type: normalizeEventType(String(row.type ?? 'UPDATE')) as WebhookPayload['type'],
+    table: String(row.table),
+    record: (row.record ?? row.new ?? row.new_record) as JobRow | NoteRow,
+    old_record: (oldRecord as JobRow | null | undefined) ?? null,
+  }
+}
+
+function isDirectPayload(body: unknown): body is DirectPayload {
+  if (!body || typeof body !== 'object') return false
+  const row = body as Record<string, unknown>
+  return (
+    typeof row.userId === 'string' &&
+    typeof row.title === 'string' &&
+    typeof row.body === 'string' &&
+    !('table' in row)
+  )
+}
+
+function collectJobChangeParts(record: JobRow, oldRecord: JobRow): string[] {
+  const changeParts: string[] = []
+
+  if (oldRecord.status !== record.status) {
+    changeParts.push(`status is now ${formatStatus(record.status)}`)
+  }
+  if (
+    normalizeDate(oldRecord.scheduled_date) !== normalizeDate(record.scheduled_date) ||
+    normalizeTime(oldRecord.scheduled_start_time) !== normalizeTime(record.scheduled_start_time)
+  ) {
+    changeParts.push('schedule updated')
+  }
+  if (normalizedText(oldRecord.address) !== normalizedText(record.address)) {
+    changeParts.push('job site updated')
+  }
+  if (normalizedText(oldRecord.notes) !== normalizedText(record.notes)) {
+    changeParts.push('description updated')
+  }
+  if (normalizedText(oldRecord.title) !== normalizedText(record.title)) {
+    changeParts.push('title updated')
+  }
+
+  return changeParts
+}
+
 function buildJobNotifications(
   record: JobRow,
   oldRecord: JobRow | null,
   eventType: string,
 ): DirectPayload[] {
   const workerId = record.assigned_to
-  if (!workerId) return []
-
-  if (shouldSkipSelfUpdate(workerId, record.last_updated_by)) {
+  if (!workerId) {
+    console.log('send-worker-push: skip job — no assignee', { jobId: record.id })
     return []
   }
 
-  const notifications: DirectPayload[] = []
-  const data = { jobId: record.id, type: 'job' }
-
-  if (eventType === 'INSERT') {
-    notifications.push({
-      userId: workerId,
-      title: 'New job assigned',
-      body: `You have been assigned: ${record.title}`,
-      data,
-    })
-    return notifications
+  if (shouldSkipSelfUpdate(workerId, record.last_updated_by)) {
+    console.log('send-worker-push: skip job — worker self-update', { jobId: record.id })
+    return []
   }
 
-  if (eventType !== 'UPDATE') return []
+  const data = { jobId: record.id, type: 'job' }
+  const normalizedEvent = normalizeEventType(eventType)
 
-  // Some Supabase webhook integrations omit old_record; still notify the assignee.
+  if (normalizedEvent === 'INSERT') {
+    return [
+      {
+        userId: workerId,
+        title: 'New job assigned',
+        body: `You have been assigned: ${record.title}`,
+        data,
+      },
+    ]
+  }
+
+  if (normalizedEvent !== 'UPDATE') return []
+
+  // Webhook without old_record — still notify on any admin edit.
   if (!oldRecord) {
-    notifications.push({
-      userId: workerId,
-      title: 'Job updated',
-      body: `${record.title} was updated`,
-      data,
-    })
-    return notifications
+    return [
+      {
+        userId: workerId,
+        title: 'Job updated',
+        body: `${record.title} was updated`,
+        data,
+      },
+    ]
   }
 
   if (oldRecord.assigned_to !== record.assigned_to) {
-    notifications.push({
-      userId: workerId,
-      title: 'Job assigned',
-      body: `You have been assigned: ${record.title}`,
-      data,
-    })
-    return notifications
+    return [
+      {
+        userId: workerId,
+        title: 'Job assigned',
+        body: `You have been assigned: ${record.title}`,
+        data,
+      },
+    ]
   }
 
-  if (oldRecord.status !== record.status) {
-    notifications.push({
-      userId: workerId,
-      title: 'Job status updated',
-      body: `${record.title} is now ${formatStatus(record.status)}`,
-      data,
-    })
-    return notifications
+  const changeParts = collectJobChangeParts(record, oldRecord)
+
+  // Admin saved but field diff missed (partial old_record, formatting, etc.)
+  const editorId = record.last_updated_by
+  const oldEditorId = oldRecord.last_updated_by ?? null
+  if (
+    changeParts.length === 0 &&
+    editorId &&
+    editorId !== workerId &&
+    editorId !== oldEditorId
+  ) {
+    changeParts.push('details updated')
   }
 
-  const scheduleChanged =
-    oldRecord.scheduled_date !== record.scheduled_date ||
-    oldRecord.scheduled_start_time !== record.scheduled_start_time
+  if (changeParts.length === 0) {
+    console.log('send-worker-push: skip job — no detected changes', {
+      jobId: record.id,
+      eventType: normalizedEvent,
+    })
+    return []
+  }
 
-  const detailsChanged = oldRecord.title !== record.title || scheduleChanged
+  const body =
+    changeParts.length === 1
+      ? `${record.title}: ${changeParts[0]}`
+      : `${record.title} was updated`
 
-  if (detailsChanged) {
-    notifications.push({
+  return [
+    {
       userId: workerId,
       title: 'Job updated',
-      body: `${record.title} was updated`,
+      body,
       data,
-    })
-  }
-
-  return notifications
+    },
+  ]
 }
 
 async function buildNoteNotification(
@@ -204,18 +296,6 @@ async function sendPushToUser(
   }
 }
 
-function isDatabaseWebhookPayload(body: unknown): body is WebhookPayload {
-  if (!body || typeof body !== 'object') return false
-  const row = body as Record<string, unknown>
-  return typeof row.table === 'string' && typeof row.type === 'string' && row.record != null
-}
-
-function isDirectPayload(body: unknown): body is DirectPayload {
-  if (!body || typeof body !== 'object') return false
-  const row = body as Record<string, unknown>
-  return typeof row.userId === 'string' && typeof row.title === 'string' && typeof row.body === 'string'
-}
-
 function getServiceRoleKey(): string {
   return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY') ?? ''
 }
@@ -274,28 +354,31 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', serviceRoleKey)
   const notifications: DirectPayload[] = []
 
-  if (body.userId && body.title && body.body) {
-    notifications.push(body as DirectPayload)
-  } else if (body.table && body.record) {
-    const webhook = body as WebhookPayload
-    const table = normalizeTableName(webhook.table)
+  if (isDirectPayload(body)) {
+    notifications.push(body)
+  } else {
+    const webhook = parseDatabaseWebhook(body)
+    if (webhook) {
+      const table = normalizeTableName(webhook.table)
+      const eventType = normalizeEventType(String(webhook.type))
 
-    if (table === 'jobs') {
-      notifications.push(
-        ...buildJobNotifications(
-          webhook.record as JobRow,
-          (webhook.old_record as JobRow | null) ?? null,
-          webhook.type,
-        ),
-      )
-    }
+      if (table === 'jobs') {
+        notifications.push(
+          ...buildJobNotifications(
+            webhook.record as JobRow,
+            (webhook.old_record as JobRow | null) ?? null,
+            eventType,
+          ),
+        )
+      }
 
-    if (table === 'job_notes' && webhook.type === 'INSERT') {
-      const noteNotification = await buildNoteNotification(
-        supabase,
-        webhook.record as NoteRow,
-      )
-      if (noteNotification) notifications.push(noteNotification)
+      if (table === 'job_notes' && eventType === 'INSERT') {
+        const noteNotification = await buildNoteNotification(
+          supabase,
+          webhook.record as NoteRow,
+        )
+        if (noteNotification) notifications.push(noteNotification)
+      }
     }
   }
 

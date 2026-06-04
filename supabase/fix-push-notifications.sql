@@ -25,6 +25,9 @@ CREATE INDEX IF NOT EXISTS push_tokens_user_id_idx ON public.push_tokens (user_i
 ALTER TABLE public.jobs
   ADD COLUMN IF NOT EXISTS last_updated_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
 
+-- Full old row in Database Webhook payloads (needed for edit diffs).
+ALTER TABLE public.jobs REPLICA IDENTITY FULL;
+
 ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users manage own push tokens" ON public.push_tokens;

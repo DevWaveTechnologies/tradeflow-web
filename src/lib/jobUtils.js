@@ -84,6 +84,17 @@ export function formatScheduledDateTime(dateKey, time) {
   return timeLabel ? `${dateLabel} at ${timeLabel}` : dateLabel
 }
 
+/** Values for HTML date/time inputs from DB columns */
+export function scheduleDateInputValue(dateKey) {
+  if (!dateKey) return ''
+  return String(dateKey).slice(0, 10)
+}
+
+export function scheduleTimeInputValue(time) {
+  if (!time) return ''
+  return String(time).slice(0, 5)
+}
+
 export function formatNoteDate(isoDate) {
   if (!isoDate) return '—'
   return new Date(isoDate).toLocaleString(undefined, {

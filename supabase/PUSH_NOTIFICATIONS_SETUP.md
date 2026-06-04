@@ -14,6 +14,8 @@ Run in Supabase SQL Editor:
 
 `supabase/fix-push-notifications.sql`
 
+Includes `REPLICA IDENTITY FULL` on `jobs` so UPDATE webhooks send a complete `old_record` (required for edit notifications).
+
 ## 2. Expo project ID (mobile)
 
 `send-worker-push` is **not** a PowerShell command — it is the Supabase Edge Function you deploy later (see section 3).

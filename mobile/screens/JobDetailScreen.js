@@ -4,16 +4,25 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppHeader from '../components/AppHeader'
-import { formatJobDate, formatScheduledDateTime, formatStatus, workerNameForJob } from '../lib/jobUtils'
+import {
+  formatJobDate,
+  formatScheduledDateTime,
+  formatStatus,
+  scheduleDateInputValue,
+  scheduleTimeInputValue,
+  workerNameForJob,
+} from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
+import JobEditableRow, { EditActions, PencilButton } from '../components/JobEditableRow'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
@@ -36,9 +45,71 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
   const [assigning, setAssigning] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
+  const [editingField, setEditingField] = useState(null)
+  const [savingField, setSavingField] = useState(false)
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftNotes, setDraftNotes] = useState('')
+  const [draftAddress, setDraftAddress] = useState('')
+  const [draftScheduledDate, setDraftScheduledDate] = useState('')
+  const [draftScheduledTime, setDraftScheduledTime] = useState('')
 
   function bumpActivity() {
     setActivityRefreshKey((key) => key + 1)
+  }
+
+  function startEdit(field) {
+    if (!job) return
+    setEditingField(field)
+    setDraftTitle(job.title ?? '')
+    setDraftNotes(job.notes ?? '')
+    setDraftAddress(job.address ?? '')
+    setDraftScheduledDate(scheduleDateInputValue(job.scheduled_date))
+    setDraftScheduledTime(scheduleTimeInputValue(job.scheduled_start_time))
+    setErrorMessage('')
+  }
+
+  function cancelEdit() {
+    setEditingField(null)
+    setErrorMessage('')
+  }
+
+  async function saveField(field) {
+    if (!job) return
+
+    const payload = { last_updated_by: profile.id }
+
+    if (field === 'title') {
+      const title = draftTitle.trim()
+      if (!title) {
+        setErrorMessage('Title is required.')
+        return
+      }
+      payload.title = title
+    } else if (field === 'notes') {
+      payload.notes = draftNotes.trim() || null
+    } else if (field === 'address') {
+      payload.address = draftAddress.trim() || null
+    } else if (field === 'schedule') {
+      payload.scheduled_date = draftScheduledDate.trim() || null
+      payload.scheduled_start_time = draftScheduledTime.trim() || null
+    }
+
+    setSavingField(true)
+    setErrorMessage('')
+
+    const { error } = await supabase.from('jobs').update(payload).eq('id', jobId)
+
+    setSavingField(false)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setJob((current) => (current ? { ...current, ...payload } : current))
+    setEditingField(null)
+    bumpActivity()
+    onUpdated?.()
   }
 
   useEffect(() => {
@@ -162,7 +233,13 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
     )
   }
 
-  const description = job.notes?.trim() || '—'
+  const saveCancel = (field) => (
+    <EditActions
+      onSave={() => saveField(field)}
+      onCancel={cancelEdit}
+      saving={savingField}
+    />
+  )
 
   return (
     <View style={styles.flex}>
@@ -174,14 +251,99 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
 
         <View style={styles.card}>
           <DetailRow label="Customer" value={job.companies?.name ?? '—'} />
-          <DetailRow label="Description" value={description} />
-          {job.address ? <DetailRow label="Job site" value={job.address} /> : null}
-          <DetailRow label="Status" value={formatStatus(job.status)} />
-          <DetailRow
-            label="Assigned worker"
-            value={workerNameForJob(job, workers)}
+
+          {isAdmin && editingField === 'title' ? (
+            <View style={styles.row}>
+              <Text style={styles.rowLabel}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={draftTitle}
+                onChangeText={setDraftTitle}
+                autoFocus
+              />
+              {saveCancel('title')}
+            </View>
+          ) : (
+            <View style={styles.row}>
+              <View style={styles.labelRow}>
+                <Text style={styles.rowLabel}>Title</Text>
+                {isAdmin ? (
+                  <PencilButton onPress={() => startEdit('title')} label="Edit title" />
+                ) : null}
+              </View>
+              <Text style={styles.rowValue}>{job.title}</Text>
+            </View>
+          )}
+
+          <JobEditableRow
+            label="Description"
+            value={job.notes?.trim() || '—'}
+            canEdit={isAdmin}
+            isEditing={editingField === 'notes'}
+            onEdit={() => startEdit('notes')}
+            editor={
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={draftNotes}
+                onChangeText={setDraftNotes}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                autoFocus
+              />
+            }
+            actions={saveCancel('notes')}
           />
-          <DetailRow label="Scheduled" value={formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)} />
+
+          <JobEditableRow
+            label="Job site"
+            value={job.address?.trim() || '—'}
+            canEdit={isAdmin}
+            isEditing={editingField === 'address'}
+            onEdit={() => startEdit('address')}
+            editor={
+              <TextInput
+                style={styles.input}
+                value={draftAddress}
+                onChangeText={setDraftAddress}
+                autoFocus
+              />
+            }
+            actions={saveCancel('address')}
+          />
+
+          <DetailRow label="Status" value={formatStatus(job.status)} />
+          <DetailRow label="Assigned worker" value={workerNameForJob(job, workers)} />
+
+          <JobEditableRow
+            label="Scheduled"
+            value={formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)}
+            canEdit={isAdmin}
+            isEditing={editingField === 'schedule'}
+            onEdit={() => startEdit('schedule')}
+            editor={
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={draftScheduledDate}
+                  onChangeText={setDraftScheduledDate}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9ca3af"
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={draftScheduledTime}
+                  onChangeText={setDraftScheduledTime}
+                  placeholder="09:30"
+                  placeholderTextColor="#9ca3af"
+                  autoCapitalize="none"
+                />
+              </>
+            }
+            actions={saveCancel('schedule')}
+          />
+
           <DetailRow label="Date" value={formatJobDate(job.created_at)} />
         </View>
 
@@ -259,17 +421,35 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+    gap: 6,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   rowLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#6b7280',
-    marginBottom: 4,
   },
   rowValue: {
     fontSize: 15,
     color: '#111827',
     lineHeight: 22,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    color: '#111827',
+  },
+  textArea: {
+    minHeight: 88,
   },
   loader: {
     marginTop: 40,

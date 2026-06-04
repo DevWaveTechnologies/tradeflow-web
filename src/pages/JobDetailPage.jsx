@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { formatJobDate, formatScheduledDateTime, formatStatus, workerNameForJob } from '../lib/jobUtils'
+import {
+  formatJobDate,
+  formatScheduledDateTime,
+  formatStatus,
+  scheduleDateInputValue,
+  scheduleTimeInputValue,
+  workerNameForJob,
+} from '../lib/jobUtils'
 import JobNotesSection from '../components/JobNotesSection'
 import JobPhotosSection from '../components/JobPhotosSection'
 import JobActivitySection from '../components/JobActivitySection'
+import JobEditableField, { EditActions, PencilButton } from '../components/JobEditableField'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -19,9 +27,70 @@ export default function JobDetailPage() {
   const [assigning, setAssigning] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
+  const [editingField, setEditingField] = useState(null)
+  const [savingField, setSavingField] = useState(false)
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftNotes, setDraftNotes] = useState('')
+  const [draftAddress, setDraftAddress] = useState('')
+  const [draftScheduledDate, setDraftScheduledDate] = useState('')
+  const [draftScheduledTime, setDraftScheduledTime] = useState('')
 
   function bumpActivity() {
     setActivityRefreshKey((key) => key + 1)
+  }
+
+  function startEdit(field) {
+    if (!job) return
+    setEditingField(field)
+    setDraftTitle(job.title ?? '')
+    setDraftNotes(job.notes ?? '')
+    setDraftAddress(job.address ?? '')
+    setDraftScheduledDate(scheduleDateInputValue(job.scheduled_date))
+    setDraftScheduledTime(scheduleTimeInputValue(job.scheduled_start_time))
+    setErrorMessage('')
+  }
+
+  function cancelEdit() {
+    setEditingField(null)
+    setErrorMessage('')
+  }
+
+  async function saveField(field) {
+    if (!job || !profile?.id) return
+
+    const payload = { last_updated_by: profile.id }
+
+    if (field === 'title') {
+      const title = draftTitle.trim()
+      if (!title) {
+        setErrorMessage('Title is required.')
+        return
+      }
+      payload.title = title
+    } else if (field === 'notes') {
+      payload.notes = draftNotes.trim() || null
+    } else if (field === 'address') {
+      payload.address = draftAddress.trim() || null
+    } else if (field === 'schedule') {
+      payload.scheduled_date = draftScheduledDate || null
+      payload.scheduled_start_time = draftScheduledTime || null
+    }
+
+    setSavingField(true)
+    setErrorMessage('')
+
+    const { error } = await supabase.from('jobs').update(payload).eq('id', id)
+
+    setSavingField(false)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setJob((current) => (current ? { ...current, ...payload } : current))
+    setEditingField(null)
+    bumpActivity()
   }
 
   useEffect(() => {
@@ -138,6 +207,7 @@ export default function JobDetailPage() {
   const customer = job.companies?.name ?? '—'
   const description = job.notes?.trim() || '—'
   const worker = workerNameForJob(job, workers)
+  const inputClass = 'w-full rounded border px-3 py-2 text-sm'
 
   return (
     <article className="mt-6 max-w-2xl text-left">
@@ -145,41 +215,126 @@ export default function JobDetailPage() {
         ← Back to jobs
       </Link>
 
-      <h2 className="mt-4 text-2xl font-bold text-gray-900">{job.title}</h2>
+      <div className="mt-4 flex items-start gap-2">
+        {isAdmin && editingField === 'title' ? (
+          <div className="flex-1 space-y-2">
+            <input
+              type="text"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              className={inputClass}
+              autoFocus
+            />
+            <EditActions
+              onSave={() => saveField('title')}
+              onCancel={cancelEdit}
+              saving={savingField}
+            />
+          </div>
+        ) : (
+          <>
+            <h2 className="flex-1 text-2xl font-bold text-gray-900">{job.title}</h2>
+            {isAdmin ? (
+              <PencilButton label="Edit title" onClick={() => startEdit('title')} />
+            ) : null}
+          </>
+        )}
+      </div>
 
       <dl className="mt-6 divide-y rounded border bg-white">
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Customer</dt>
           <dd className="text-sm text-gray-900 sm:col-span-2">{customer}</dd>
         </div>
-        <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
-          <dt className="text-sm font-medium text-gray-500">Description</dt>
-          <dd className="whitespace-pre-wrap text-sm text-gray-900 sm:col-span-2">
-            {description}
-          </dd>
-        </div>
-        {job.address ? (
-          <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
-            <dt className="text-sm font-medium text-gray-500">Job site</dt>
-            <dd className="text-sm text-gray-900 sm:col-span-2">{job.address}</dd>
-          </div>
-        ) : null}
+
+        <JobEditableField
+          label="Description"
+          canEdit={isAdmin}
+          isEditing={editingField === 'notes'}
+          onEdit={() => startEdit('notes')}
+          display={<span className="whitespace-pre-wrap">{description}</span>}
+          actions={
+            <EditActions
+              onSave={() => saveField('notes')}
+              onCancel={cancelEdit}
+              saving={savingField}
+            />
+          }
+        >
+          <textarea
+            value={draftNotes}
+            onChange={(event) => setDraftNotes(event.target.value)}
+            className={inputClass}
+            rows={3}
+            autoFocus
+          />
+        </JobEditableField>
+
+        <JobEditableField
+          label="Job site"
+          canEdit={isAdmin}
+          isEditing={editingField === 'address'}
+          onEdit={() => startEdit('address')}
+          display={job.address?.trim() || '—'}
+          actions={
+            <EditActions
+              onSave={() => saveField('address')}
+              onCancel={cancelEdit}
+              saving={savingField}
+            />
+          }
+        >
+          <input
+            type="text"
+            value={draftAddress}
+            onChange={(event) => setDraftAddress(event.target.value)}
+            className={inputClass}
+            autoFocus
+          />
+        </JobEditableField>
+
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Status</dt>
           <dd className="text-sm capitalize text-gray-900 sm:col-span-2">
             {formatStatus(job.status)}
           </dd>
         </div>
+
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Assigned worker</dt>
           <dd className="text-sm text-gray-900 sm:col-span-2">{worker}</dd>
         </div>
-        <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
-          <dt className="text-sm font-medium text-gray-500">Scheduled</dt>
-          <dd className="text-sm text-gray-900 sm:col-span-2">
-            {formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)}
-          </dd>
-        </div>
+
+        <JobEditableField
+          label="Scheduled"
+          canEdit={isAdmin}
+          isEditing={editingField === 'schedule'}
+          onEdit={() => startEdit('schedule')}
+          display={formatScheduledDateTime(job.scheduled_date, job.scheduled_start_time)}
+          actions={
+            <EditActions
+              onSave={() => saveField('schedule')}
+              onCancel={cancelEdit}
+              saving={savingField}
+            />
+          }
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              type="date"
+              value={draftScheduledDate}
+              onChange={(event) => setDraftScheduledDate(event.target.value)}
+              className={inputClass}
+            />
+            <input
+              type="time"
+              value={draftScheduledTime}
+              onChange={(event) => setDraftScheduledTime(event.target.value)}
+              className={inputClass}
+            />
+          </div>
+        </JobEditableField>
+
         <div className="grid gap-1 px-4 py-4 sm:grid-cols-3">
           <dt className="text-sm font-medium text-gray-500">Date</dt>
           <dd className="text-sm text-gray-900 sm:col-span-2">
