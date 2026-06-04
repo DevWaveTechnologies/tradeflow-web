@@ -1,4 +1,4 @@
-import { formatStatus } from './jobUtils'
+import { formatStatus, isProfileUuid } from './jobUtils'
 import { fetchProfileNames } from './profileNames'
 
 export function formatActivityError(error) {
@@ -101,10 +101,12 @@ export async function fetchJobActivityWithActors(supabase, jobId) {
 
   const profileIds = new Set()
   for (const row of rows) {
-    if (row.actor_id) profileIds.add(row.actor_id)
-    const meta = row.metadata ?? {}
-    if (meta.from) profileIds.add(meta.from)
-    if (meta.to) profileIds.add(meta.to)
+    if (isProfileUuid(row.actor_id)) profileIds.add(row.actor_id)
+    if (row.activity_type === 'assignment_changed') {
+      const meta = row.metadata ?? {}
+      if (isProfileUuid(meta.from)) profileIds.add(meta.from)
+      if (isProfileUuid(meta.to)) profileIds.add(meta.to)
+    }
   }
 
   const nameById = await fetchProfileNames(supabase, [...profileIds])

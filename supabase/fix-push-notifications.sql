@@ -1,0 +1,40 @@
+-- Push notifications for workers (Expo).
+-- 1. Run this SQL in Supabase SQL Editor.
+-- 2. Deploy Edge Function: supabase functions deploy send-worker-push
+-- 3. Set secrets (Dashboard → Edge Functions → Secrets):
+--      PUSH_WEBHOOK_SECRET = a long random string you choose
+--      (Optional SERVICE_ROLE_KEY = sb_secret_... — not SUPABASE_SERVICE_ROLE_KEY; SUPABASE_* is reserved)
+-- 4. Create Database Webhooks (Dashboard → Database → Webhooks):
+--    A) jobs — Update — URL: https://YOUR_PROJECT.supabase.co/functions/v1/send-worker-push
+--       Header: x-push-secret: YOUR_PUSH_WEBHOOK_SECRET
+--    B) job_notes — Insert — same URL and header
+-- 5. Mobile: use a development build (not Expo Go) for remote push on a physical device.
+
+CREATE TABLE IF NOT EXISTS public.push_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  token text NOT NULL,
+  platform text NOT NULL CHECK (platform IN ('ios', 'android', 'web', 'unknown')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, token)
+);
+
+CREATE INDEX IF NOT EXISTS push_tokens_user_id_idx ON public.push_tokens (user_id);
+
+ALTER TABLE public.jobs
+  ADD COLUMN IF NOT EXISTS last_updated_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+ALTER TABLE public.push_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users manage own push tokens" ON public.push_tokens;
+CREATE POLICY "Users manage own push tokens"
+ON public.push_tokens
+FOR ALL
+TO authenticated
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.push_tokens TO authenticated;
+
+NOTIFY pgrst, 'reload schema';

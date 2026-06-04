@@ -77,7 +77,10 @@ export default function JobDetailPage() {
     setErrorMessage('')
     setUpdatingStatus(true)
 
-    let query = supabase.from('jobs').update({ status }).eq('id', id)
+    let query = supabase
+      .from('jobs')
+      .update({ status, last_updated_by: profile.id })
+      .eq('id', id)
 
     if (!isAdmin) {
       query = query.eq('assigned_to', profile.id)
@@ -103,7 +106,7 @@ export default function JobDetailPage() {
 
     const { error } = await supabase
       .from('jobs')
-      .update({ assigned_to: workerId })
+      .update({ assigned_to: workerId, last_updated_by: profile.id })
       .eq('id', id)
 
     setAssigning(false)

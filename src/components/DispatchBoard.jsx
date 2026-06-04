@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import {
   UNASSIGNED_COLUMN,
   buildTimeSlots,
@@ -68,6 +69,7 @@ function DropCell({ columnId, time, children, onDrop, isDragOver }) {
 }
 
 export default function DispatchBoard() {
+  const { profile } = useAuth()
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -155,6 +157,7 @@ export default function DispatchBoard() {
         assigned_to,
         scheduled_date: date,
         scheduled_start_time: time || null,
+        last_updated_by: profile?.id ?? null,
       })
       .eq('id', job.id)
 
@@ -181,6 +184,7 @@ export default function DispatchBoard() {
       .update({
         scheduled_date: null,
         scheduled_start_time: null,
+        last_updated_by: profile?.id ?? null,
       })
       .eq('id', job.id)
 

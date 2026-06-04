@@ -1,5 +1,7 @@
+import { isProfileUuid } from './jobUtils'
+
 export async function fetchProfileNames(supabase, ids) {
-  const unique = [...new Set(ids.filter(Boolean))]
+  const unique = [...new Set(ids.filter(isProfileUuid))]
   if (unique.length === 0) {
     return {}
   }

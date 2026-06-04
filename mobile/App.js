@@ -6,6 +6,7 @@ import AppHeader from './components/AppHeader'
 import LoginScreen from './screens/LoginScreen'
 import JobsScreen from './screens/JobsScreen'
 import AdminShellScreen from './screens/AdminShellScreen'
+import WorkerPushSetup from './components/WorkerPushSetup'
 
 function AppContent() {
   const { session, profile, profileError, loading } = useAuth()
@@ -57,7 +58,12 @@ function AppContent() {
     return <AdminShellScreen />
   }
 
-  return <JobsScreen />
+  return (
+    <>
+      <WorkerPushSetup />
+      <JobsScreen />
+    </>
+  )
 }
 
 export default function App() {

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { removePushToken } from '../lib/pushNotifications'
 
 const AuthContext = createContext(null)
 
@@ -69,7 +70,11 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    const userId = session?.user?.id
     const { error } = await supabase.auth.signOut()
+    if (userId) {
+      await removePushToken(userId)
+    }
     setSession(null)
     setProfile(null)
     setProfileError('')

@@ -15,6 +15,8 @@ import JobListItem from '../components/JobListItem'
 import JobDetailScreen from './JobDetailScreen'
 import { useJobsRealtime } from '../hooks/useJobsRealtime'
 import { filterJobs } from '../lib/jobUtils'
+import useNotificationOpenJob from '../hooks/useNotificationOpenJob'
+import WorkerPushStatus from '../components/WorkerPushStatus'
 
 export default function JobsScreen({ embedded = false, refreshKey = 0, onSubViewChange }) {
   const { profile } = useAuth()
@@ -28,6 +30,8 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [workerFilter, setWorkerFilter] = useState('')
+
+  useNotificationOpenJob(setSelectedJobId)
 
   useEffect(() => {
     if (embedded) {
@@ -136,6 +140,7 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
           )}
           ListHeaderComponent={
             <>
+              {!isAdmin ? <WorkerPushStatus /> : null}
               <JobFilters
                 search={search}
                 onSearchChange={setSearch}

@@ -1,3 +1,10 @@
+const PROFILE_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isProfileUuid(value) {
+  return typeof value === 'string' && PROFILE_UUID_RE.test(value)
+}
+
 export function formatStatus(status) {
   if (!status) return 'Unknown'
   return status.replace(/_/g, ' ')

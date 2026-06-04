@@ -15,7 +15,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#111827"
       },
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.tradeflow1.tradeflow",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-asset",
@@ -26,7 +31,20 @@
           "photosPermission": "Allow TradeFlow to attach before and after job photos.",
           "cameraPermission": "Allow TradeFlow to take before and after job photos."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#111827",
+          "defaultChannel": "default"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ee4aebca-6b1e-478e-9b57-3716caa034a1"
+      }
+    },
+    "owner": "tradeflow1"
   }
 }

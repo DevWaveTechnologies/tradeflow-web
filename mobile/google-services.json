@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "586958516710",
+    "project_id": "tradeflow-4feb3",
+    "storage_bucket": "tradeflow-4feb3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:586958516710:android:153b620618b8dad219a627",
+        "android_client_info": {
+          "package_name": "com.tradeflow1.tradeflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCW8a-5_g7r_8o_j82FbCo6b0_N3rxExVA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
