@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import {
+  emptyJobSiteForm,
+  jobSiteFormHasValues,
+  validateJobSiteForm,
+} from '../lib/jobSiteAddress'
+import JobSiteAddressFields from './JobSiteAddressFields'
 
 export default function CreateJobForm({ onCreated }) {
   const [customers, setCustomers] = useState([])
   const [loadingCustomers, setLoadingCustomers] = useState(true)
   const [companyId, setCompanyId] = useState('')
   const [title, setTitle] = useState('')
-  const [address, setAddress] = useState('')
+  const [jobSite, setJobSite] = useState(emptyJobSiteForm)
+  const [jobSiteErrors, setJobSiteErrors] = useState({})
   const [notes, setNotes] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledStartTime, setScheduledStartTime] = useState('')
@@ -37,8 +44,8 @@ export default function CreateJobForm({ onCreated }) {
     setCompanyId(id)
 
     const customer = customers.find((c) => c.id === id)
-    if (customer?.address && !address.trim()) {
-      setAddress(customer.address)
+    if (customer?.address && !jobSiteFormHasValues(jobSite)) {
+      setJobSite({ ...emptyJobSiteForm(), line1: customer.address })
     }
   }
 
@@ -57,12 +64,20 @@ export default function CreateJobForm({ onCreated }) {
       return
     }
 
+    const addressValidation = validateJobSiteForm(jobSite)
+    if (!addressValidation.valid) {
+      setJobSiteErrors(addressValidation.errors)
+      setErrorMessage('Fix the job site address before saving.')
+      return
+    }
+
+    setJobSiteErrors({})
     setSubmitting(true)
 
     const { error } = await supabase.from('jobs').insert({
       title: title.trim(),
       company_id: companyId,
-      address: address.trim() || null,
+      ...addressValidation.payload,
       notes: notes.trim() || null,
       scheduled_date: scheduledDate || null,
       scheduled_start_time: scheduledStartTime || null,
@@ -77,7 +92,8 @@ export default function CreateJobForm({ onCreated }) {
 
     setCompanyId('')
     setTitle('')
-    setAddress('')
+    setJobSite(emptyJobSiteForm())
+    setJobSiteErrors({})
     setNotes('')
     setScheduledDate('')
     setScheduledStartTime('')
@@ -134,16 +150,19 @@ export default function CreateJobForm({ onCreated }) {
         </div>
 
         <div>
-          <label htmlFor="job-address" className="mb-1 block text-sm font-medium">
-            Job site address
-          </label>
-          <input
-            id="job-address"
-            type="text"
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
-            className="w-full rounded border px-3 py-2"
-            placeholder="e.g. Swansea (can differ from customer address)"
+          <p className="mb-2 text-sm font-medium text-gray-900">Job site address</p>
+          <p className="mb-3 text-xs text-gray-500">
+            Optional — can differ from the customer address. If you add any part, line 1 and a
+            valid UK postcode are required.
+          </p>
+          <JobSiteAddressFields
+            form={jobSite}
+            onChange={(next) => {
+              setJobSite(next)
+              setJobSiteErrors({})
+            }}
+            errors={jobSiteErrors}
+            idPrefix="create-job-site"
           />
         </div>
 

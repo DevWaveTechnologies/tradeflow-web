@@ -16,6 +16,13 @@ import JobActivitySection from '../components/JobActivitySection'
 import JobEditableField, { EditActions, PencilButton } from '../components/JobEditableField'
 import CustomerContactActions from '../components/CustomerContactActions'
 import MapsAction from '../components/MapsAction'
+import JobSiteAddressFields from '../components/JobSiteAddressFields'
+import {
+  formatJobSiteAddressLines,
+  jobSiteMapsAddress,
+  jobToJobSiteForm,
+  validateJobSiteForm,
+} from '../lib/jobSiteAddress'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -35,7 +42,8 @@ export default function JobDetailPage() {
   const [savingField, setSavingField] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftNotes, setDraftNotes] = useState('')
-  const [draftAddress, setDraftAddress] = useState('')
+  const [draftJobSite, setDraftJobSite] = useState({ building: '', line1: '', line2: '', postcode: '' })
+  const [jobSiteErrors, setJobSiteErrors] = useState({})
   const [draftScheduledDate, setDraftScheduledDate] = useState('')
   const [draftScheduledTime, setDraftScheduledTime] = useState('')
 
@@ -48,7 +56,8 @@ export default function JobDetailPage() {
     setEditingField(field)
     setDraftTitle(job.title ?? '')
     setDraftNotes(job.notes ?? '')
-    setDraftAddress(job.address ?? '')
+    setDraftJobSite(jobToJobSiteForm(job))
+    setJobSiteErrors({})
     setDraftScheduledDate(scheduleDateInputValue(job.scheduled_date))
     setDraftScheduledTime(scheduleTimeInputValue(job.scheduled_start_time))
     setErrorMessage('')
@@ -56,6 +65,7 @@ export default function JobDetailPage() {
 
   function cancelEdit() {
     setEditingField(null)
+    setJobSiteErrors({})
     setErrorMessage('')
   }
 
@@ -74,7 +84,14 @@ export default function JobDetailPage() {
     } else if (field === 'notes') {
       payload.notes = draftNotes.trim() || null
     } else if (field === 'address') {
-      payload.address = draftAddress.trim() || null
+      const addressValidation = validateJobSiteForm(draftJobSite)
+      if (!addressValidation.valid) {
+        setJobSiteErrors(addressValidation.errors)
+        setErrorMessage('Fix the job site address before saving.')
+        return
+      }
+      setJobSiteErrors({})
+      Object.assign(payload, addressValidation.payload)
     } else if (field === 'schedule') {
       payload.scheduled_date = draftScheduledDate || null
       payload.scheduled_start_time = draftScheduledTime || null
@@ -233,6 +250,13 @@ export default function JobDetailPage() {
 
   const customer = job.companies
   const customerName = customer?.name ?? '—'
+  const jobSiteLines = formatJobSiteAddressLines(job)
+  const jobSiteDisplay =
+    jobSiteLines.length > 0 ? (
+      <span className="whitespace-pre-wrap">{jobSiteLines.join('\n')}</span>
+    ) : (
+      '—'
+    )
   const description = job.notes?.trim() || '—'
   const worker = workerNameForJob(job, workers)
   const inputClass = 'w-full rounded border px-3 py-2 text-sm'
@@ -306,8 +330,10 @@ export default function JobDetailPage() {
           canEdit={isAdmin}
           isEditing={editingField === 'address'}
           onEdit={() => startEdit('address')}
-          display={job.address?.trim() || '—'}
-          footer={editingField !== 'address' ? <MapsAction address={job.address} /> : null}
+          display={jobSiteDisplay}
+          footer={
+            editingField !== 'address' ? <MapsAction address={jobSiteMapsAddress(job)} /> : null
+          }
           actions={
             <EditActions
               onSave={() => saveField('address')}
@@ -316,12 +342,14 @@ export default function JobDetailPage() {
             />
           }
         >
-          <input
-            type="text"
-            value={draftAddress}
-            onChange={(event) => setDraftAddress(event.target.value)}
-            className={inputClass}
-            autoFocus
+          <JobSiteAddressFields
+            form={draftJobSite}
+            onChange={(next) => {
+              setDraftJobSite(next)
+              setJobSiteErrors({})
+            }}
+            errors={jobSiteErrors}
+            idPrefix="edit-job-site"
           />
         </JobEditableField>
 

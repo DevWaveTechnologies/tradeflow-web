@@ -9,6 +9,12 @@ import {
 } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { supabase } from '../lib/supabase'
+import {
+  emptyJobSiteForm,
+  jobSiteFormHasValues,
+  validateJobSiteForm,
+} from '../lib/jobSiteAddress'
+import JobSiteAddressFields from '../components/JobSiteAddressFields'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 export default function CreateJobScreen({ onCreated }) {
@@ -16,7 +22,8 @@ export default function CreateJobScreen({ onCreated }) {
   const [loadingCustomers, setLoadingCustomers] = useState(true)
   const [companyId, setCompanyId] = useState('')
   const [title, setTitle] = useState('')
-  const [address, setAddress] = useState('')
+  const [jobSite, setJobSite] = useState(emptyJobSiteForm)
+  const [jobSiteErrors, setJobSiteErrors] = useState({})
   const [notes, setNotes] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledStartTime, setScheduledStartTime] = useState('')
@@ -46,8 +53,8 @@ export default function CreateJobScreen({ onCreated }) {
     setCompanyId(customerId)
 
     const customer = customers.find((c) => c.id === customerId)
-    if (customer?.address && !address.trim()) {
-      setAddress(customer.address)
+    if (customer?.address && !jobSiteFormHasValues(jobSite)) {
+      setJobSite({ ...emptyJobSiteForm(), line1: customer.address })
     }
   }
 
@@ -65,12 +72,20 @@ export default function CreateJobScreen({ onCreated }) {
       return
     }
 
+    const addressValidation = validateJobSiteForm(jobSite)
+    if (!addressValidation.valid) {
+      setJobSiteErrors(addressValidation.errors)
+      setErrorMessage('Fix the job site address before saving.')
+      return
+    }
+
+    setJobSiteErrors({})
     setSubmitting(true)
 
     const { error } = await supabase.from('jobs').insert({
       title: title.trim(),
       company_id: companyId,
-      address: address.trim() || null,
+      ...addressValidation.payload,
       notes: notes.trim() || null,
       scheduled_date: scheduledDate.trim() || null,
       scheduled_start_time: scheduledStartTime.trim() || null,
@@ -85,7 +100,8 @@ export default function CreateJobScreen({ onCreated }) {
 
     setCompanyId('')
     setTitle('')
-    setAddress('')
+    setJobSite(emptyJobSiteForm())
+    setJobSiteErrors({})
     setNotes('')
     setScheduledDate('')
     setScheduledStartTime('')
@@ -141,12 +157,16 @@ export default function CreateJobScreen({ onCreated }) {
 
           <View style={styles.field}>
             <Text style={styles.label}>Job site address</Text>
-            <TextInput
-              style={styles.input}
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Can differ from customer address"
-              placeholderTextColor="#9ca3af"
+            <Text style={styles.hintMuted}>
+              Optional. If you add any part, line 1 and a valid UK postcode are required.
+            </Text>
+            <JobSiteAddressFields
+              form={jobSite}
+              onChange={(next) => {
+                setJobSite(next)
+                setJobSiteErrors({})
+              }}
+              errors={jobSiteErrors}
             />
           </View>
 
@@ -262,6 +282,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#b45309',
     lineHeight: 20,
+  },
+  hintMuted: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+    marginBottom: 4,
   },
   primaryButton: {
     backgroundColor: '#111827',

@@ -26,6 +26,13 @@ import JobActivitySection from '../components/JobActivitySection'
 import JobEditableRow, { EditActions, PencilButton } from '../components/JobEditableRow'
 import CustomerContactActions from '../components/CustomerContactActions'
 import MapsAction from '../components/MapsAction'
+import JobSiteAddressFields from '../components/JobSiteAddressFields'
+import {
+  formatJobSiteAddressLines,
+  jobSiteMapsAddress,
+  jobToJobSiteForm,
+  validateJobSiteForm,
+} from '../lib/jobSiteAddress'
 import KeyboardAwareScreen from '../components/KeyboardAwareScreen'
 
 function DetailRow({ label, value }) {
@@ -53,7 +60,8 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
   const [savingField, setSavingField] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftNotes, setDraftNotes] = useState('')
-  const [draftAddress, setDraftAddress] = useState('')
+  const [draftJobSite, setDraftJobSite] = useState({ building: '', line1: '', line2: '', postcode: '' })
+  const [jobSiteErrors, setJobSiteErrors] = useState({})
   const [draftScheduledDate, setDraftScheduledDate] = useState('')
   const [draftScheduledTime, setDraftScheduledTime] = useState('')
 
@@ -66,7 +74,8 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
     setEditingField(field)
     setDraftTitle(job.title ?? '')
     setDraftNotes(job.notes ?? '')
-    setDraftAddress(job.address ?? '')
+    setDraftJobSite(jobToJobSiteForm(job))
+    setJobSiteErrors({})
     setDraftScheduledDate(scheduleDateInputValue(job.scheduled_date))
     setDraftScheduledTime(scheduleTimeInputValue(job.scheduled_start_time))
     setErrorMessage('')
@@ -74,6 +83,7 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
 
   function cancelEdit() {
     setEditingField(null)
+    setJobSiteErrors({})
     setErrorMessage('')
   }
 
@@ -92,7 +102,14 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
     } else if (field === 'notes') {
       payload.notes = draftNotes.trim() || null
     } else if (field === 'address') {
-      payload.address = draftAddress.trim() || null
+      const addressValidation = validateJobSiteForm(draftJobSite)
+      if (!addressValidation.valid) {
+        setJobSiteErrors(addressValidation.errors)
+        setErrorMessage('Fix the job site address before saving.')
+        return
+      }
+      setJobSiteErrors({})
+      Object.assign(payload, addressValidation.payload)
     } else if (field === 'schedule') {
       payload.scheduled_date = draftScheduledDate.trim() || null
       payload.scheduled_start_time = draftScheduledTime.trim() || null
@@ -277,6 +294,9 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
     />
   )
 
+  const jobSiteLines = formatJobSiteAddressLines(job)
+  const jobSiteDisplay = jobSiteLines.length > 0 ? jobSiteLines.join('\n') : '—'
+
   return (
     <View style={styles.flex}>
       <AppHeader title={job.title} subtitle="Job details" />
@@ -337,21 +357,23 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
 
           <JobEditableRow
             label="Job site"
-            value={job.address?.trim() || '—'}
+            value={jobSiteDisplay}
             footer={
               editingField !== 'address' ? (
-                <MapsAction address={job.address} style={styles.mapsAction} />
+                <MapsAction address={jobSiteMapsAddress(job)} style={styles.mapsAction} />
               ) : null
             }
             canEdit={isAdmin}
             isEditing={editingField === 'address'}
             onEdit={() => startEdit('address')}
             editor={
-              <TextInput
-                style={styles.input}
-                value={draftAddress}
-                onChangeText={setDraftAddress}
-                autoFocus
+              <JobSiteAddressFields
+                form={draftJobSite}
+                onChange={(next) => {
+                  setDraftJobSite(next)
+                  setJobSiteErrors({})
+                }}
+                errors={jobSiteErrors}
               />
             }
             actions={saveCancel('address')}
