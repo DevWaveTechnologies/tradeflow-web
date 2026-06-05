@@ -170,11 +170,10 @@ export default function JobsScreen({ embedded = false, refreshKey = 0, onSubView
                 : 'No jobs match your search or filters.'}
             </Text>
           }
-          contentContainerStyle={
-            filteredJobs.length === 0
-              ? styles.emptyContainerWithFilters
-              : styles.list
-          }
+          contentContainerStyle={[
+            styles.listContent,
+            filteredJobs.length === 0 && styles.listContentEmpty,
+          ]}
         />
       )}
     </View>
@@ -198,26 +197,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     fontSize: 14,
   },
-  list: {
+  listContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
+  listContentEmpty: {
+    flexGrow: 1,
+  },
   filterSummary: {
-    marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 4,
     marginBottom: 4,
     fontSize: 13,
     color: '#6b7280',
-  },
-  emptyContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-  emptyContainerWithFilters: {
-    flexGrow: 1,
-    paddingBottom: 24,
   },
   empty: {
     textAlign: 'center',

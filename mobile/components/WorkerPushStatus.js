@@ -87,22 +87,22 @@ export default function WorkerPushStatus() {
 
 const styles = StyleSheet.create({
   bannerOk: {
-    marginHorizontal: 16,
     marginTop: 8,
+    marginBottom: 10,
     padding: 10,
     backgroundColor: '#ecfdf5',
-    borderRadius: 8,
+    borderRadius: 12,
   },
   bannerOkText: {
     color: '#047857',
     fontSize: 13,
   },
   bannerWarn: {
-    marginHorizontal: 16,
     marginTop: 8,
+    marginBottom: 10,
     padding: 12,
     backgroundColor: '#fffbeb',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#fcd34d',
   },

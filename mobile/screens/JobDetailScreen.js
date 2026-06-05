@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -46,6 +47,7 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
   const [errorMessage, setErrorMessage] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
   const [editingField, setEditingField] = useState(null)
   const [savingField, setSavingField] = useState(false)
@@ -210,6 +212,38 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
     setJob((current) => (current ? { ...current, assigned_to: workerId } : current))
     bumpActivity()
     onUpdated?.()
+  }
+
+  function confirmDeleteJob() {
+    if (!isAdmin || !job) return
+
+    Alert.alert(
+      'Delete job',
+      `Delete "${job.title}"? Notes, photos, and activity for this job will be removed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: deleteJob },
+      ],
+    )
+  }
+
+  async function deleteJob() {
+    if (!isAdmin || !job) return
+
+    setErrorMessage('')
+    setDeleting(true)
+
+    const { error } = await supabase.from('jobs').delete().eq('id', jobId)
+
+    setDeleting(false)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    onUpdated?.()
+    onBack()
   }
 
   if (loading) {
@@ -396,6 +430,16 @@ export default function JobDetailScreen({ jobId, onBack, onUpdated }) {
                 ))}
               </Picker>
             </View>
+
+            <Pressable
+              style={[styles.deleteButton, deleting && styles.buttonDisabled]}
+              onPress={confirmDeleteJob}
+              disabled={deleting}
+            >
+              <Text style={styles.deleteButtonText}>
+                {deleting ? 'Deleting…' : 'Delete job'}
+              </Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -513,5 +557,23 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 48,
+  },
+  deleteButton: {
+    marginTop: 16,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#b91c1c',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
 })

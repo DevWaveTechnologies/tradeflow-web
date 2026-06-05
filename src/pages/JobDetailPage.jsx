@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import {
@@ -19,6 +19,7 @@ import MapsAction from '../components/MapsAction'
 
 export default function JobDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'admin'
 
@@ -28,6 +29,7 @@ export default function JobDetailPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
   const [editingField, setEditingField] = useState(null)
   const [savingField, setSavingField] = useState(false)
@@ -189,6 +191,29 @@ export default function JobDetailPage() {
 
     setJob((current) => (current ? { ...current, assigned_to: workerId } : current))
     bumpActivity()
+  }
+
+  async function deleteJob() {
+    if (!isAdmin || !job) return
+
+    const confirmed = window.confirm(
+      `Delete "${job.title}"? Notes, photos, and activity for this job will be removed.`,
+    )
+    if (!confirmed) return
+
+    setErrorMessage('')
+    setDeleting(true)
+
+    const { error } = await supabase.from('jobs').delete().eq('id', id)
+
+    setDeleting(false)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    navigate('/')
   }
 
   if (loading) {
@@ -390,6 +415,15 @@ export default function JobDetailPage() {
               </option>
             ))}
           </select>
+
+          <button
+            type="button"
+            onClick={deleteJob}
+            disabled={deleting}
+            className="mt-6 rounded border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete job'}
+          </button>
         </div>
       ) : null}
 

@@ -62,11 +62,10 @@ export default function JobFilters({
 
 const styles = StyleSheet.create({
   section: {
-    marginHorizontal: 16,
     marginTop: 12,
-    marginBottom: 4,
-    padding: 14,
-    borderRadius: 10,
+    marginBottom: 10,
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     backgroundColor: '#fff',
